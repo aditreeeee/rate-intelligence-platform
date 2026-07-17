@@ -59,6 +59,17 @@
   background: radial-gradient(circle, rgba(144,224,239,0.4), transparent 70%);
   animation: drift 16s ease-in-out infinite;
 }
+.login-card__visual-light {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(202, 240, 248, 0.28), transparent 62%);
+  opacity: 0;
+  transition: opacity 320ms var(--ease-out);
+  will-change: opacity;
+}
+.login-card__visual:hover .login-card__visual-light { opacity: 1; }
 .login-card__visual-content { position: relative; z-index: 2; }
 .login-card__eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-frosted); }
 .login-card__visual-title { font-size: 30px; line-height: 1.28; margin: var(--space-4) 0 var(--space-4); color: white; }

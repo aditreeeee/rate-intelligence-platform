@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Plus, Building2, BedDouble, Tag, Copy, Archive, Trash2, Pencil, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Building2, BedDouble, Tag, Settings, Copy, Archive, Trash2, Pencil, MapPin, ArrowUpRight } from "lucide-react";
 import { Topbar } from "../../components/layout/Topbar.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { Table } from "../../components/ui/Table.jsx";
@@ -33,6 +34,7 @@ const COLUMNS = [
 export function PropertiesPage() {
   const data = useData();
   const toast = useToast();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -68,9 +70,10 @@ export function PropertiesPage() {
   );
 
   const stats = [
-    { label: "Total Properties", value: data.properties.length, icon: Building2 },
-    { label: "Total Rooms", value: data.rooms.length, icon: BedDouble },
-    { label: "Total Rate Plans", value: data.ratePlans.length, icon: Tag },
+    { label: "Total Properties", value: data.properties.length, icon: Building2, to: "/portal/properties" },
+    { label: "Total Rooms", value: data.rooms.length, icon: BedDouble, to: "/portal/rooms" },
+    { label: "Total Rate Plans", value: data.ratePlans.length, icon: Tag, to: "/portal/rate-plans" },
+    { label: "Integrations", value: 6, icon: Settings, to: "/portal/settings" },
   ];
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };
@@ -109,12 +112,20 @@ export function PropertiesPage() {
 
       <div className="stat-row">
         {stats.map((s) => (
-          <Card key={s.label} className="stat-card">
+          <Card
+            key={s.label}
+            className="stat-card stat-card--clickable"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(s.to)}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate(s.to)}
+          >
             <div className="stat-card__icon"><s.icon size={20} strokeWidth={2} /></div>
-            <div>
+            <div className="stat-card__body">
               <div className="stat-card__value tabular">{s.value}</div>
               <div className="stat-card__label">{s.label}</div>
             </div>
+            <ArrowUpRight size={16} strokeWidth={2} className="stat-card__arrow" />
           </Card>
         ))}
       </div>

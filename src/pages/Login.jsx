@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, User, Lock, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useCursorGlow } from "../hooks/useCursorGlow.js";
 
 function Particles({ count = 22 }) {
   const particles = useMemo(
@@ -41,6 +42,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const panelGlow = useCursorGlow();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -75,8 +77,14 @@ export function Login() {
       />
 
       <div className="login-card">
-        <div className="login-card__visual">
+        <div
+          className="login-card__visual"
+          ref={panelGlow.ref}
+          onMouseMove={panelGlow.onMouseMove}
+          onMouseLeave={panelGlow.onMouseLeave}
+        >
           <div className="login-card__visual-glow" />
+          <div className="login-card__visual-light" />
           <div className="login-card__visual-content">
             <span className="login-card__eyebrow">Rate Intelligence</span>
             <h2 className="login-card__visual-title display">
