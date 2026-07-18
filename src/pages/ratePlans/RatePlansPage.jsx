@@ -16,7 +16,7 @@ import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
 import { ExportMenu } from "../../components/ui/ExportMenu.jsx";
 import { ImportWizard } from "../../components/ui/ImportWizard.jsx";
-import { PropertyFilterPanel } from "../../components/ui/PropertyFilterPanel.jsx";
+import { PropertyRoomTreeFilter, useSelectedRooms } from "../../components/ui/PropertyRoomTreeFilter.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { usePropertyContext } from "../../context/PropertyContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -50,8 +50,13 @@ export function RatePlansPage() {
   const data = useData();
   const toast = useToast();
   const permissions = usePermissions();
-  const { selectedPropertyIds } = usePropertyContext();
-  const [roomId, setRoomId] = useState("");
+  const { selectedPropertyIds, setSelectedPropertyIds } = usePropertyContext();
+  // Room-level selection is new and Rate-Plans-specific, so it's kept as
+  // page-local state rather than added to the shared PropertyContext — Rooms
+  // page and other consumers of that context don't need this granularity.
+  // Property-level selection still reuses PropertyContext so breadcrumbs and
+  // any other property-scoped consumer stay in sync.
+  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
   const [search, setSearch] = useState("");
   const [mealPlanFilter, setMealPlanFilter] = useState("");
   const [viewMode, setViewMode] = useState("active");
@@ -67,18 +72,36 @@ export function RatePlansPage() {
   const [viewing, setViewing] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
-  const hasPropertySelection = selectedPropertyIds.length > 0;
   const selectedProperties = useMemo(
     () => data.properties.filter((p) => selectedPropertyIds.includes(p.id)),
     [data.properties, selectedPropertyIds]
   );
   const selectedProperty = selectedProperties.length === 1 ? selectedProperties[0] : null;
 
+  // Keep room-level selection valid if the underlying scoped rooms change
+  // (e.g. role switch, or a room gets deleted) — mirrors the same cleanup
+  // PropertyContext already does for selectedPropertyIds.
+  useEffect(() => {
+    const validRoomIds = new Set(data.rooms.map((r) => r.id));
+    setSelectedRoomIds((ids) => ids.filter((id) => validRoomIds.has(id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.rooms]);
+
+  // Effective selected rooms = union of rooms under any selected property,
+  // plus any individually-selected room. This is the single source of truth
+  // the table and the Add Rate Plan prefill both read from.
+  const effectiveRoomIds = useSelectedRooms({
+    properties: data.properties,
+    rooms: data.rooms,
+    selectedPropertyIds,
+    selectedRoomIds,
+  });
+  const hasSelection = selectedPropertyIds.length > 0 || selectedRoomIds.length > 0;
+
   const roomsForProperty = useMemo(
-    () => data.rooms.filter((r) => selectedPropertyIds.includes(r.propertyId)),
-    [data.rooms, selectedPropertyIds]
+    () => data.rooms.filter((r) => effectiveRoomIds.includes(r.id)),
+    [data.rooms, effectiveRoomIds]
   );
-  const selectedRoom = data.rooms.find((r) => r.id === roomId);
 
   const roomLookup = (id) => data.rooms.find((r) => r.id === id);
   const propertyForRoom = (room) => data.properties.find((p) => p.id === room?.propertyId);
@@ -87,22 +110,15 @@ export function RatePlansPage() {
     [roomsForProperty, data.properties]
   );
 
-  // Reset the room filter if it falls outside the current property selection.
-  useEffect(() => {
-    if (roomId && !roomsForProperty.some((r) => r.id === roomId)) setRoomId("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPropertyIds]);
+  // Prefill the Add Rate Plan form's room only when the current selection
+  // resolves to exactly one room — otherwise let the user pick explicitly.
+  const scopeRoomId = effectiveRoomIds.length === 1 ? effectiveRoomIds[0] : "";
+  const selectedRoom = data.rooms.find((r) => r.id === scopeRoomId);
 
   const ratePlansInScope = useMemo(() => {
-    return data.ratePlans.filter((rp) => {
-      const room = roomLookup(rp.roomId);
-      if (!room) return false;
-      if (!selectedPropertyIds.includes(room.propertyId)) return false;
-      if (roomId) return rp.roomId === roomId;
-      return true;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.ratePlans, data.rooms, roomId, selectedPropertyIds]);
+    const roomIdSet = new Set(effectiveRoomIds);
+    return data.ratePlans.filter((rp) => roomIdSet.has(rp.roomId));
+  }, [data.ratePlans, effectiveRoomIds]);
 
   const ratePlansInView = useMemo(
     () => ratePlansInScope.filter((rp) => (viewMode === "archived" ? rp.status === "Archived" : rp.status !== "Archived")),
@@ -229,13 +245,6 @@ export function RatePlansPage() {
   ];
   const exportRowsData = selection.count ? ratePlansInView.filter((rp) => selection.selected.includes(rp.id)) : pageData;
 
-  const ratePlanCountForProperty = (propertyId) =>
-    data.ratePlans.filter((rp) => {
-      if (rp.status === "Archived") return false;
-      const room = roomLookup(rp.roomId);
-      return room && room.propertyId === propertyId;
-    }).length;
-
   return (
     <div>
       <Breadcrumbs
@@ -248,15 +257,20 @@ export function RatePlansPage() {
       <Topbar title="Rate Plans" subtitle="Rate plans always live under Property → Room." hidePropertySelector />
 
       <div className="property-scoped-layout">
-        <PropertyFilterPanel getCount={ratePlanCountForProperty} />
+        <PropertyRoomTreeFilter
+          selectedPropertyIds={selectedPropertyIds}
+          setSelectedPropertyIds={setSelectedPropertyIds}
+          selectedRoomIds={selectedRoomIds}
+          setSelectedRoomIds={setSelectedRoomIds}
+        />
 
         <div className="property-scoped-layout__content">
-          {!hasPropertySelection ? (
+          {!hasSelection ? (
             <Card>
               <EmptyState
                 icon={Building2}
-                title="Select a property to get started"
-                message="Select one or more properties from the panel on the left to view their rate plans."
+                title="Select a property or room to view rate plans"
+                message="Select one or more properties or rooms from the panel on the left to view their rate plans."
               />
             </Card>
           ) : (
@@ -268,17 +282,6 @@ export function RatePlansPage() {
           <Card padded={false}>
         <div style={{ padding: "20px 20px 0" }}>
           <div className="page-toolbar">
-            <Select
-              options={roomsForProperty.map((r) => r.name)}
-              placeholder="All Rooms"
-              value={selectedRoom?.name || ""}
-              onChange={(e) => {
-                const r = roomsForProperty.find((rr) => rr.name === e.target.value);
-                setRoomId(r?.id || "");
-                setPage(1);
-              }}
-              style={{ maxWidth: 180 }}
-            />
             <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rate plans..." />
             <Select options={MEAL_PLANS} placeholder="Meal Plan" value={mealPlanFilter} onChange={(e) => { setMealPlanFilter(e.target.value); setPage(1); }} style={{ maxWidth: 150 }} />
             <Input type="date" tabular value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} style={{ maxWidth: 150 }} title="Valid from" />
@@ -381,7 +384,7 @@ export function RatePlansPage() {
         initial={editing}
         roomLabel={selectedRoom?.name}
         rooms={roomOptions}
-        scopeRoomId={roomId}
+        scopeRoomId={scopeRoomId}
       />
 
       <RatePlanDetailModal ratePlan={viewing} onClose={() => setViewing(null)} onEdit={openEdit} />

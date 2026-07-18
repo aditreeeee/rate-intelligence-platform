@@ -148,6 +148,48 @@
 }
 .property-panel__item--checked .property-panel__item-badge { color: var(--color-teal); background: var(--color-surface); }
 
+/* ===== Property/Room tree filter (Rate Plans only) ===== */
+.tree-panel__list { padding: var(--space-2) var(--space-2); }
+.tree-panel__node + .tree-panel__node { margin-top: 2px; }
+.tree-panel__row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 8px; border-radius: var(--radius-sm);
+  cursor: default; transition: background var(--transition-fast);
+}
+.tree-panel__row--property:hover { background: var(--color-surface-alt); }
+.tree-panel__row--property.tree-panel__row--checked { background: var(--color-cyan); }
+.tree-panel__row--room:hover { background: var(--color-surface-alt); }
+.tree-panel__row--room.tree-panel__row--checked { background: var(--color-cyan); }
+.tree-panel__chevron {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex-shrink: 0; padding: 0;
+  background: none; border: none; color: var(--color-text-faint); cursor: pointer;
+  border-radius: var(--radius-sm); transition: color var(--transition-fast), background var(--transition-fast);
+}
+.tree-panel__chevron:hover:not(:disabled) { color: var(--color-text); background: var(--color-surface); }
+.tree-panel__chevron:disabled { cursor: default; opacity: 0.35; }
+.tree-panel__chevron-spacer { display: inline-block; width: 15px; height: 15px; }
+.tree-panel__label {
+  flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--color-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+}
+.tree-panel__row--room .tree-panel__label { font-size: 13px; font-weight: 500; cursor: default; }
+.tree-panel__sub { font-size: 11.5px; font-weight: 600; color: var(--color-text-faint); }
+.tree-panel__row--checked .tree-panel__sub { color: var(--color-teal); }
+
+.tree-panel__children {
+  margin-left: 26px; padding-left: 12px; border-left: 1px solid var(--color-border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  animation: tree-panel-expand var(--transition-base);
+}
+@keyframes tree-panel-expand {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 1000px; }
+}
+
+.property-panel__header--secondary { padding-top: 0; padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border); }
+
 .property-panel__drawer-trigger { display: none; }
 
 @media (max-width: 1080px) {
