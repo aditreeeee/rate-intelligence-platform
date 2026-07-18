@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, User, Lock, AlertCircle } from "lucide-react";
-import { useAuth } from "../context/AuthContext.jsx";
+import { ArrowRight, User, Lock, AlertCircle, ShieldCheck, Building2 } from "lucide-react";
+import { useAuth, MOCK_ACCOUNTS } from "../context/AuthContext.jsx";
 import { useCursorGlow } from "../hooks/useCursorGlow.js";
 
 function Particles({ count = 22 }) {
@@ -57,6 +57,14 @@ export function Login() {
         setError(result.error);
       }
     }, 450);
+  };
+
+  const quickLogin = (account) => {
+    setUsername(account.username);
+    setPassword(account.password);
+    setError("");
+    const result = login(account.username, account.password);
+    if (result.ok) navigate("/portal/properties", { replace: true });
   };
 
   return (
@@ -151,6 +159,27 @@ export function Login() {
               {loading ? <span className="btn__spinner" /> : <>Sign In <ArrowRight size={17} strokeWidth={2} /></>}
             </button>
           </form>
+
+          <div className="login-demo-accounts">
+            <span className="login-demo-accounts__label">Quick demo access</span>
+            <div className="login-demo-accounts__row">
+              {MOCK_ACCOUNTS.map((acct) => (
+                <button
+                  key={acct.username}
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => quickLogin(acct)}
+                >
+                  {acct.role === "SuperAdmin" ? (
+                    <ShieldCheck size={14} strokeWidth={2} />
+                  ) : (
+                    <Building2 size={14} strokeWidth={2} />
+                  )}
+                  {acct.displayName}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <p className="login-footer">eGlobe Solutions &bull; Rate Intelligence Platform</p>
         </div>

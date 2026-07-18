@@ -20,6 +20,7 @@ import { ImportWizard } from "../../components/ui/ImportWizard.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
+import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePaginatedSortedFiltered } from "../../lib/format.js";
 import { BED_TYPES, ROOM_STATUSES } from "../../mocks/rooms.js";
 import { RoomForm } from "./RoomForm.jsx";
@@ -46,6 +47,7 @@ const VIEW_TABS = [
 export function RoomsPage() {
   const data = useData();
   const toast = useToast();
+  const permissions = usePermissions();
   const [searchParams] = useSearchParams();
   const [propertyId, setPropertyId] = useState(searchParams.get("propertyId") || "");
   const [search, setSearch] = useState("");
@@ -242,6 +244,7 @@ export function RoomsPage() {
             statusOptions={changeStatusOptions}
             onChangeStatus={handleBulkStatus}
             archived={archivedView}
+            canDelete={permissions.canDeleteRoomPermanently}
           />
 
           <Table
@@ -291,7 +294,9 @@ export function RoomsPage() {
                     ) : (
                       <>
                         <button className="table__action-btn" title="Restore" onClick={() => handleRestore(r)}><RotateCcw size={15} strokeWidth={2} /></button>
-                        <button className="table__action-btn table__action-btn--danger" title="Delete Permanently" onClick={() => setConfirmDelete(r)}><Trash2 size={15} strokeWidth={2} /></button>
+                        {permissions.canDeleteRoomPermanently && (
+                          <button className="table__action-btn table__action-btn--danger" title="Delete Permanently" onClick={() => setConfirmDelete(r)}><Trash2 size={15} strokeWidth={2} /></button>
+                        )}
                       </>
                     )}
                   </div>

@@ -20,6 +20,7 @@ import { ImportWizard } from "../../components/ui/ImportWizard.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
+import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePaginatedSortedFiltered, formatCurrency, formatDate } from "../../lib/format.js";
 import { MEAL_PLANS, RATE_PLAN_STATUSES } from "../../mocks/ratePlans.js";
 import { RatePlanForm } from "./RatePlanForm.jsx";
@@ -47,6 +48,7 @@ const VIEW_TABS = [
 export function RatePlansPage() {
   const data = useData();
   const toast = useToast();
+  const permissions = usePermissions();
   const [searchParams] = useSearchParams();
   const [propertyId, setPropertyId] = useState(searchParams.get("propertyId") || "");
   const [roomId, setRoomId] = useState(searchParams.get("roomId") || "");
@@ -285,6 +287,7 @@ export function RatePlansPage() {
             statusOptions={changeStatusOptions}
             onChangeStatus={handleBulkStatus}
             archived={archivedView}
+            canDelete={permissions.canDeleteRatePlanPermanently}
           />
           <Table
             columns={columns}
@@ -331,7 +334,9 @@ export function RatePlansPage() {
                       ) : (
                         <>
                           <button className="table__action-btn" title="Restore" onClick={() => handleRestore(rp)}><RotateCcw size={15} strokeWidth={2} /></button>
-                          <button className="table__action-btn table__action-btn--danger" title="Delete Permanently" onClick={() => setConfirmDelete(rp)}><Trash2 size={15} strokeWidth={2} /></button>
+                          {permissions.canDeleteRatePlanPermanently && (
+                            <button className="table__action-btn table__action-btn--danger" title="Delete Permanently" onClick={() => setConfirmDelete(rp)}><Trash2 size={15} strokeWidth={2} /></button>
+                          )}
                         </>
                       )}
                     </div>

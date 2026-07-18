@@ -6,6 +6,7 @@ import { LogoUpload } from "../../components/ui/LogoUpload.jsx";
 import { TagPicker } from "../../components/ui/TagChips.jsx";
 import { BRANDS, CURRENCIES, TIME_ZONES, STATUSES, PROPERTY_TYPES, PROPERTY_TAGS } from "../../mocks/properties.js";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges.js";
+import { usePermissions } from "../../hooks/usePermissions.js";
 
 const EMPTY = {
   name: "", brand: BRANDS[0], country: "", state: "", city: "",
@@ -23,6 +24,7 @@ function validate(form) {
 }
 
 export function PropertyForm({ open, onClose, onSubmit, initial }) {
+  const permissions = usePermissions();
   const [form, setForm] = useState(initial || EMPTY);
   const [errors, setErrors] = useState({});
   const baselineRef = useRef(EMPTY);
@@ -72,6 +74,11 @@ export function PropertyForm({ open, onClose, onSubmit, initial }) {
         </div>
 
         <div className="form-grid">
+          {initial && (
+            <Field label="Property ID" id="p-id">
+              <Input id="p-id" value={initial.id} disabled={!permissions.canEditPropertyId} readOnly title="Property ID is system-generated and cannot be changed." />
+            </Field>
+          )}
           <Field label="Property Name" required id="p-name" error={errors.name}>
             <Input id="p-name" value={form.name} onChange={set("name")} required placeholder="e.g. Aurora Bay Resort" />
           </Field>
