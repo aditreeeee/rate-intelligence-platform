@@ -3,6 +3,7 @@ import { PROPERTIES } from "../mocks/properties.js";
 import { ROOMS } from "../mocks/rooms.js";
 import { RATE_PLANS } from "../mocks/ratePlans.js";
 import { useAuth } from "./AuthContext.jsx";
+import { getPermissions } from "../lib/permissions.js";
 
 const DataContext = createContext(null);
 
@@ -91,10 +92,34 @@ function reducer(state, action) {
 export function DataProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { user } = useAuth();
+  const permissions = useMemo(() => getPermissions(user?.role), [user?.role]);
 
   const stamp = useCallback(
     (obj) => ({ ...obj, lastModifiedBy: user?.username || "System", lastModifiedAt: new Date().toISOString() }),
     [user]
+  );
+
+  // Data-layer scoping: this is the single place that filters "all data" down
+  // to "data this user is allowed to see." Every consumer (list pages,
+  // Property Profile, GlobalSearch, KPI stats) reads these scoped arrays
+  // instead of duplicating an ownerId/role check of their own.
+  const scopedProperties = useMemo(() => {
+    if (permissions.canViewAllProperties) return state.properties;
+    return state.properties.filter((p) => p.ownerId === user?.ownerId);
+  }, [state.properties, permissions.canViewAllProperties, user?.ownerId]);
+
+  const scopedPropertyIds = useMemo(() => new Set(scopedProperties.map((p) => p.id)), [scopedProperties]);
+
+  const scopedRooms = useMemo(
+    () => (permissions.canViewAllProperties ? state.rooms : state.rooms.filter((r) => scopedPropertyIds.has(r.propertyId))),
+    [state.rooms, permissions.canViewAllProperties, scopedPropertyIds]
+  );
+
+  const scopedRoomIds = useMemo(() => new Set(scopedRooms.map((r) => r.id)), [scopedRooms]);
+
+  const scopedRatePlans = useMemo(
+    () => (permissions.canViewAllProperties ? state.ratePlans : state.ratePlans.filter((rp) => scopedRoomIds.has(rp.roomId))),
+    [state.ratePlans, permissions.canViewAllProperties, scopedRoomIds]
   );
 
   const roomCountFor = useCallback((propertyId) => state.rooms.filter((r) => r.propertyId === propertyId).length, [state.rooms]);
@@ -109,12 +134,16 @@ export function DataProvider({ children }) {
   const api = useMemo(
     () => ({
       ...state,
+      properties: scopedProperties,
+      rooms: scopedRooms,
+      ratePlans: scopedRatePlans,
       roomCountFor,
       ratePlanCountFor,
 
       // Properties
       addProperty: (data) => {
-        const property = stamp({ ...data, id: nextId(state.properties, "PROP", 1000) });
+        const ownerId = permissions.canViewAllProperties ? (data.ownerId ?? null) : user?.ownerId;
+        const property = stamp({ ...data, ownerId, id: nextId(state.properties, "PROP", 1000) });
         dispatch({ type: "ADD_PROPERTY", payload: property });
         return property;
       },
@@ -207,7 +236,7 @@ export function DataProvider({ children }) {
       },
       bulkDeleteRatePlans: (ids) => dispatch({ type: "BULK_DELETE_RATE_PLANS", ids }),
     }),
-    [state, roomCountFor, ratePlanCountFor, stamp]
+    [state, scopedProperties, scopedRooms, scopedRatePlans, roomCountFor, ratePlanCountFor, stamp, permissions, user]
   );
 
   return <DataContext.Provider value={api}>{children}</DataContext.Provider>;

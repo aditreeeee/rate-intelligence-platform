@@ -3,7 +3,7 @@ import { Archive, Copy, Trash2, X, RefreshCcw, RotateCcw } from "lucide-react";
 import { Select } from "./Input.jsx";
 
 export function BulkActionBar({
-  count, onClear, onArchive, onRestore, onDuplicate, onDelete, statusOptions, onChangeStatus, archived = false,
+  count, onClear, onArchive, onRestore, onDuplicate, onDelete, statusOptions, onChangeStatus, archived = false, canDelete = true,
 }) {
   if (!count) return null;
   return (
@@ -36,9 +36,11 @@ export function BulkActionBar({
             <Archive size={14} strokeWidth={2} /> Archive
           </button>
         )}
-        <button className="bulk-bar__btn bulk-bar__btn--danger" onClick={onDelete}>
-          <Trash2 size={14} strokeWidth={2} /> {archived ? "Delete Permanently" : "Delete"}
-        </button>
+        {canDelete && (
+          <button className="bulk-bar__btn bulk-bar__btn--danger" onClick={onDelete}>
+            <Trash2 size={14} strokeWidth={2} /> {archived ? "Delete Permanently" : "Delete"}
+          </button>
+        )}
       </div>
       <button className="bulk-bar__clear" onClick={onClear} aria-label="Clear selection">
         <X size={16} strokeWidth={2} />

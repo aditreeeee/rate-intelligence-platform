@@ -23,6 +23,7 @@ import { ImportWizard } from "../../components/ui/ImportWizard.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
+import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePaginatedSortedFiltered, formatDate } from "../../lib/format.js";
 import { STATUSES, PROPERTY_TYPES } from "../../mocks/properties.js";
 import { PropertyForm } from "./PropertyForm.jsx";
@@ -47,6 +48,7 @@ export function PropertiesPage() {
   const data = useData();
   const toast = useToast();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -123,7 +125,9 @@ export function PropertiesPage() {
     { label: "Total Properties", value: data.properties.length, icon: Building2, to: "/portal/properties" },
     { label: "Total Rooms", value: data.rooms.length, icon: BedDouble, to: "/portal/rooms" },
     { label: "Total Rate Plans", value: data.ratePlans.length, icon: Tag, to: "/portal/rate-plans" },
-    { label: "Integrations", value: 6, icon: Settings, to: "/portal/settings" },
+    ...(permissions.canViewIntegrations
+      ? [{ label: "Integrations", value: 6, icon: Settings, to: "/portal/settings" }]
+      : []),
   ];
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };

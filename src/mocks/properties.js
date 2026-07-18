@@ -17,6 +17,7 @@ export let PROPERTIES = [
     description: "Beachfront luxury resort with panoramic ocean views and full-service spa.",
     tags: ["Luxury", "Resort"], logoUrl: "",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-18T10:24:00Z",
+    ownerId: "OWNER-1",
   },
   {
     id: "PROP-1002", name: "Meridian Grand Downtown", brand: "Meridian Hotels",
@@ -26,6 +27,7 @@ export let PROPERTIES = [
     description: "Iconic city-centre hotel steps from major business districts.",
     tags: ["Business"], logoUrl: "",
     lastModifiedBy: "R. Okafor", lastModifiedAt: "2026-07-02T14:05:00Z",
+    ownerId: "OWNER-2",
   },
   {
     id: "PROP-1003", name: "Coastal Escapes Villa Retreat", brand: "Coastal Escapes",
@@ -35,6 +37,7 @@ export let PROPERTIES = [
     description: "Private villa cluster with dedicated concierge and infinity pools.",
     tags: ["Luxury"], logoUrl: "",
     lastModifiedBy: "S. Malhotra", lastModifiedAt: "2026-06-29T09:41:00Z",
+    ownerId: "OWNER-1",
   },
   {
     id: "PROP-1004", name: "Urban Nest Loft Suites", brand: "Urban Nest",
@@ -44,6 +47,7 @@ export let PROPERTIES = [
     description: "Compact serviced apartments tailored for extended business stays.",
     tags: ["Business", "Airport"], logoUrl: "",
     lastModifiedBy: "S. Malhotra", lastModifiedAt: "2026-07-10T08:12:00Z",
+    ownerId: "OWNER-2",
   },
   {
     id: "PROP-1005", name: "The Cinnamon Boutique", brand: "Independent",
@@ -53,6 +57,7 @@ export let PROPERTIES = [
     description: "Design-forward boutique property in the heart of the arts district.",
     tags: ["Boutique"], logoUrl: "",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-05-30T16:50:00Z",
+    ownerId: "OWNER-2",
   },
   {
     id: "PROP-1006", name: "Meridian Riviera Hotel", brand: "Meridian Hotels",
@@ -62,5 +67,6 @@ export let PROPERTIES = [
     description: "Mediterranean coastal hotel with rooftop dining and marina access.",
     tags: ["Resort"], logoUrl: "",
     lastModifiedBy: "R. Okafor", lastModifiedAt: "2026-04-11T11:30:00Z",
+    ownerId: "OWNER-1",
   },
 ];
