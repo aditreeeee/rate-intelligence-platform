@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { GlobalSearch } from "../GlobalSearch.jsx";
 import { PropertySelector } from "../ui/PropertySelector.jsx";
 
-export function Topbar({ title, subtitle, hideSearch = false }) {
+export function Topbar({ title, subtitle, hideSearch = false, hidePropertySelector = false }) {
   const { user, accounts, loginAsAccount } = useAuth();
   const initials = (user?.username || "A").slice(0, 2).toUpperCase();
   return (
@@ -13,7 +13,7 @@ export function Topbar({ title, subtitle, hideSearch = false }) {
         {subtitle && <p className="topbar__subtitle">{subtitle}</p>}
       </div>
       <div className="topbar__right">
-        <PropertySelector />
+        {!hidePropertySelector && <PropertySelector />}
         {!hideSearch && <GlobalSearch />}
 
         {/* Dev-only mock account switcher: stands in for real multi-account
