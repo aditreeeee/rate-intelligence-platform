@@ -19,7 +19,7 @@ export const ROLES = {
 // used in SettingsPage's tab definitions.
 const SETTINGS_SECTIONS_BY_ROLE = {
   [ROLES.SUPER_ADMIN]: ["general", "defaults", "integrations", "appearance"],
-  [ROLES.PROPERTY_OWNER]: ["general", "properties", "rooms", "ratePlans", "appearance"],
+  [ROLES.PROPERTY_OWNER]: ["general", "defaults", "appearance"],
 };
 
 const BASE_PERMISSIONS = {
