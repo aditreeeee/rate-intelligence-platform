@@ -16,6 +16,7 @@ import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
 import { ExportMenu } from "../../components/ui/ExportMenu.jsx";
 import { ImportWizard } from "../../components/ui/ImportWizard.jsx";
+import { PropertyFilterPanel } from "../../components/ui/PropertyFilterPanel.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { usePropertyContext } from "../../context/PropertyContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -228,6 +229,13 @@ export function RatePlansPage() {
   ];
   const exportRowsData = selection.count ? ratePlansInView.filter((rp) => selection.selected.includes(rp.id)) : pageData;
 
+  const ratePlanCountForProperty = (propertyId) =>
+    data.ratePlans.filter((rp) => {
+      if (rp.status === "Archived") return false;
+      const room = roomLookup(rp.roomId);
+      return room && room.propertyId === propertyId;
+    }).length;
+
   return (
     <div>
       <Breadcrumbs
@@ -237,23 +245,27 @@ export function RatePlansPage() {
             : [{ label: "Rate Plans" }]
         }
       />
-      <Topbar title="Rate Plans" subtitle="Rate plans always live under Property → Room." />
+      <Topbar title="Rate Plans" subtitle="Rate plans always live under Property → Room." hidePropertySelector />
 
-      {!hasPropertySelection ? (
-        <Card>
-          <EmptyState
-            icon={Building2}
-            title="Select a property to get started"
-            message="Select one or more properties from the property selector above to view their rate plans."
-          />
-        </Card>
-      ) : (
-      <>
-      <div className="page-section">
-        <Tabs tabs={VIEW_TABS} active={viewMode} onChange={setViewMode} />
-      </div>
+      <div className="property-scoped-layout">
+        <PropertyFilterPanel getCount={ratePlanCountForProperty} />
 
-      <Card padded={false}>
+        <div className="property-scoped-layout__content">
+          {!hasPropertySelection ? (
+            <Card>
+              <EmptyState
+                icon={Building2}
+                title="Select a property to get started"
+                message="Select one or more properties from the panel on the left to view their rate plans."
+              />
+            </Card>
+          ) : (
+          <>
+          <div className="page-section">
+            <Tabs tabs={VIEW_TABS} active={viewMode} onChange={setViewMode} />
+          </div>
+
+          <Card padded={false}>
         <div style={{ padding: "20px 20px 0" }}>
           <div className="page-toolbar">
             <Select
@@ -355,10 +367,12 @@ export function RatePlansPage() {
             }}
           />
           <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+            </div>
+          </Card>
+          </>
+          )}
         </div>
-      </Card>
-      </>
-      )}
+      </div>
 
       <RatePlanForm
         open={formOpen}
