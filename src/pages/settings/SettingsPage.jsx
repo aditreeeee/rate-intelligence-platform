@@ -41,7 +41,7 @@ export function SettingsPage() {
   return (
     <div>
       <Breadcrumbs items={[{ label: "Settings" }]} />
-      <Topbar title="Settings" subtitle="Configure platform defaults and future integrations." />
+      <Topbar title="Settings" subtitle="Configure platform defaults and future integrations." hidePropertySelector />
 
       <div className="page-section">
         <Tabs tabs={tabs} active={active} onChange={setActive} />
