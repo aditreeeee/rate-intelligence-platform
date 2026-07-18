@@ -6,11 +6,14 @@ in-browser via a service worker (Babel transform at request time).
 
 ## Run locally
 
+Double-click `start.bat` (bypasses PowerShell's script-signing restriction automatically),
+or run manually:
+
 ```
-powershell -File serve.ps1
+powershell -ExecutionPolicy Bypass -File serve.ps1
 ```
 
-Then open http://localhost:5173/. (Or just open `index.html` directly.)
+Then open http://localhost:5173/.
 
 ## Stack
 
