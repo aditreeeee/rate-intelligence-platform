@@ -1,10 +1,15 @@
 import React, { useState, useRef } from "react";
+import { Layers } from "lucide-react";
 import { Modal, ConfirmModal } from "../../components/ui/Modal.jsx";
 import { Field, Input, Select, Textarea } from "../../components/ui/Input.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { LogoUpload } from "../../components/ui/LogoUpload.jsx";
 import { TagPicker } from "../../components/ui/TagChips.jsx";
-import { BRANDS, CURRENCIES, TIME_ZONES, STATUSES, PROPERTY_TYPES, PROPERTY_TAGS } from "../../mocks/properties.js";
+import { Accordion, AccordionSection } from "../../components/ui/Accordion.jsx";
+import {
+  BRANDS, CURRENCIES, TIME_ZONES, STATUSES, PROPERTY_TYPES, PROPERTY_TAGS,
+  PROPERTY_CATEGORIES, SERVICE_MODELS, ACCOMMODATION_STYLES,
+} from "../../mocks/properties.js";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
 
@@ -12,6 +17,7 @@ const EMPTY = {
   name: "", brand: BRANDS[0], country: "", state: "", city: "",
   currency: CURRENCIES[0], timeZone: TIME_ZONES[0], starRating: 3,
   propertyType: PROPERTY_TYPES[0], status: "Draft", description: "",
+  propertyCategory: PROPERTY_CATEGORIES[0], serviceModel: SERVICE_MODELS[0], accommodationStyle: ACCOMMODATION_STYLES[0],
   tags: [], logoUrl: "",
 };
 
@@ -103,9 +109,6 @@ export function PropertyForm({ open, onClose, onSubmit, initial }) {
           <Field label="Star Rating" required id="p-star">
             <Select id="p-star" options={["1", "2", "3", "4", "5"]} value={String(form.starRating)} onChange={set("starRating")} />
           </Field>
-          <Field label="Property Type" required id="p-type">
-            <Select id="p-type" options={PROPERTY_TYPES} value={form.propertyType} onChange={set("propertyType")} />
-          </Field>
           <Field label="Status" required id="p-status">
             <Select id="p-status" options={STATUSES} value={form.status} onChange={set("status")} />
           </Field>
@@ -119,6 +122,27 @@ export function PropertyForm({ open, onClose, onSubmit, initial }) {
               <Textarea id="p-desc" value={form.description} onChange={set("description")} placeholder="Brief property description..." />
             </Field>
           </div>
+        </div>
+
+        <div className="form-grid__full" style={{ marginTop: "var(--space-5)" }}>
+          <Accordion>
+            <AccordionSection title="Property Classification" icon={Layers} defaultOpen>
+              <div className="form-grid">
+                <Field label="Property Type" required id="p-type">
+                  <Select id="p-type" options={PROPERTY_TYPES} value={form.propertyType} onChange={set("propertyType")} />
+                </Field>
+                <Field label="Property Category" required id="p-category">
+                  <Select id="p-category" options={PROPERTY_CATEGORIES} value={form.propertyCategory} onChange={set("propertyCategory")} />
+                </Field>
+                <Field label="Service Model" required id="p-service">
+                  <Select id="p-service" options={SERVICE_MODELS} value={form.serviceModel} onChange={set("serviceModel")} />
+                </Field>
+                <Field label="Accommodation Style" required id="p-accommodation">
+                  <Select id="p-accommodation" options={ACCOMMODATION_STYLES} value={form.accommodationStyle} onChange={set("accommodationStyle")} />
+                </Field>
+              </div>
+            </AccordionSection>
+          </Accordion>
         </div>
       </form>
     </Modal>

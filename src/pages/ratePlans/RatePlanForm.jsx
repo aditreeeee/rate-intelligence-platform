@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { Modal, ConfirmModal } from "../../components/ui/Modal.jsx";
 import { Field, Input, Select } from "../../components/ui/Input.jsx";
 import { Button } from "../../components/ui/Button.jsx";
+import { RoomClassificationSummary } from "../../components/ui/RoomClassificationSummary.jsx";
 import { MEAL_PLANS, CANCELLATION_POLICIES, RATE_PLAN_STATUSES, mealPlanLabel } from "../../mocks/ratePlans.js";
 import { RATE_PLAN_TEMPLATES } from "../../mocks/ratePlanTemplates.js";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges.js";
@@ -35,7 +36,7 @@ function validate(form) {
   return errors;
 }
 
-export function RatePlanForm({ open, onClose, onSubmit, initial, roomLabel, rooms = [], scopeRoomId }) {
+export function RatePlanForm({ open, onClose, onSubmit, initial, roomLabel, rooms = [], allRooms = [], scopeRoomId }) {
   const [form, setForm] = useState(initial || EMPTY);
   const [errors, setErrors] = useState({});
   const baselineRef = useRef(EMPTY);
@@ -86,6 +87,9 @@ export function RatePlanForm({ open, onClose, onSubmit, initial, roomLabel, room
         <div className="rp-form__room-context">
           Linked Room: <strong>{roomLabel}</strong>
         </div>
+      )}
+      {form.roomId && (
+        <RoomClassificationSummary room={allRooms.find((r) => r.id === form.roomId)} />
       )}
       {!initial && (
         <div className="template-picker">

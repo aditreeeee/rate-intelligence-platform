@@ -3,6 +3,7 @@ import { Tag, Pencil } from "lucide-react";
 import { Modal } from "../../components/ui/Modal.jsx";
 import { StatusBadge } from "../../components/ui/Badge.jsx";
 import { Button } from "../../components/ui/Button.jsx";
+import { RoomClassificationSummary } from "../../components/ui/RoomClassificationSummary.jsx";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { useData } from "../../context/DataContext.jsx";
 import { mealPlanLabel } from "../../mocks/ratePlans.js";
@@ -37,6 +38,8 @@ export function RatePlanDetailModal({ ratePlan, onClose, onEdit }) {
           </div>
           <div className="detail-view__header-badge"><StatusBadge status={ratePlan.status} /></div>
         </div>
+
+        <RoomClassificationSummary room={room} />
 
         <div className="detail-grid">
           <div className="detail-field"><span>Rate Plan ID</span><strong className="tabular">{ratePlan.id}</strong></div>

@@ -8,7 +8,7 @@ import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
 import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { Button } from "../../components/ui/Button.jsx";
-import { StatusBadge } from "../../components/ui/Badge.jsx";
+import { Badge, StatusBadge } from "../../components/ui/Badge.jsx";
 import { TagChips } from "../../components/ui/TagChips.jsx";
 import { Textarea } from "../../components/ui/Input.jsx";
 import { ConfirmModal } from "../../components/ui/Modal.jsx";
@@ -134,6 +134,15 @@ export function PropertyProfilePage() {
             <div className="detail-field"><span>Last Modified</span><strong className="tabular">{formatDate(property.lastModifiedAt)} &middot; {property.lastModifiedBy}</strong></div>
           </div>
           <div className="detail-field detail-field--full" style={{ marginTop: 16 }}>
+            <span>Classification</span>
+            <div className="tag-chips">
+              <Badge variant="info">{property.propertyType}</Badge>
+              {property.propertyCategory && <Badge variant="info">{property.propertyCategory}</Badge>}
+              {property.serviceModel && <Badge variant="success">{property.serviceModel}</Badge>}
+              {property.accommodationStyle && <Badge variant="warning">{property.accommodationStyle}</Badge>}
+            </div>
+          </div>
+          <div className="detail-field detail-field--full" style={{ marginTop: 16 }}>
             <span>Tags</span>
             <TagChips tags={property.tags} max={20} />
           </div>
@@ -192,7 +201,7 @@ export function PropertyProfilePage() {
               <div className="detail-linked-list">
                 {rooms.map((r) => (
                   <div key={r.id} className="detail-linked-item" style={{ cursor: "pointer" }} onClick={() => goToScoped("/portal/rooms")}>
-                    <span>{r.name} <span className="table__cell-muted">&middot; {r.bedType}</span></span>
+                    <span>{r.name} <span className="table__cell-muted">&middot; {r.roomType}</span></span>
                     <StatusBadge status={r.status} />
                   </div>
                 ))}

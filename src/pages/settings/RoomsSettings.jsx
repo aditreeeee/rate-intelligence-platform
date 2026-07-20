@@ -3,12 +3,13 @@ import { Save } from "lucide-react";
 import { Card } from "../../components/ui/Card.jsx";
 import { Field, Select, Input } from "../../components/ui/Input.jsx";
 import { Button } from "../../components/ui/Button.jsx";
-import { BED_TYPES, ROOM_STATUSES } from "../../mocks/rooms.js";
+import { ROOM_STATUSES } from "../../mocks/rooms.js";
+import { BED_CONFIGURATIONS } from "../../mocks/roomClassification.js";
 import { useToast } from "../../context/ToastContext.jsx";
 
 export function RoomsSettings() {
   const toast = useToast();
-  const [defaultBedType, setDefaultBedType] = useState(BED_TYPES[0]);
+  const [defaultBedType, setDefaultBedType] = useState(BED_CONFIGURATIONS[0]);
   const [defaultStatus, setDefaultStatus] = useState(ROOM_STATUSES[0]);
   const [maxOccupancy, setMaxOccupancy] = useState(6);
 
@@ -22,8 +23,8 @@ export function RoomsSettings() {
       <h3 className="settings-section__title">Rooms</h3>
       <p className="settings-section__desc">Defaults applied when a new room is created.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
-        <Field label="Default Bed Type" id="rs-bed">
-          <Select id="rs-bed" options={BED_TYPES} value={defaultBedType} onChange={(e) => setDefaultBedType(e.target.value)} />
+        <Field label="Default Bed Configuration" id="rs-bed">
+          <Select id="rs-bed" options={BED_CONFIGURATIONS} value={defaultBedType} onChange={(e) => setDefaultBedType(e.target.value)} />
         </Field>
         <Field label="Default Status" id="rs-status">
           <Select id="rs-status" options={ROOM_STATUSES} value={defaultStatus} onChange={(e) => setDefaultStatus(e.target.value)} />

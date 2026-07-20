@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Plus, BedDouble, Pencil, Copy, Trash2, Users, Cigarette, RotateCcw, Upload, Archive, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, BedDouble, Pencil, Copy, Trash2, Users, RotateCcw, Upload, Archive, Building2 } from "lucide-react";
 import { Topbar } from "../../components/layout/Topbar.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { Table } from "../../components/ui/Table.jsx";
@@ -23,9 +24,9 @@ import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePaginatedSortedFiltered } from "../../lib/format.js";
-import { BED_TYPES, ROOM_STATUSES } from "../../mocks/rooms.js";
+import { ROOM_STATUSES } from "../../mocks/rooms.js";
+import { ROOM_TYPES } from "../../mocks/roomClassification.js";
 import { RoomForm } from "./RoomForm.jsx";
-import { RoomDetailModal } from "./RoomDetailModal.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -33,9 +34,10 @@ const BASE_COLUMNS = [
   { key: "id", label: "Room ID", sortable: true, width: 110 },
   { key: "name", label: "Room Name", sortable: true },
   { key: "property", label: "Property", sortable: false, width: 170 },
-  { key: "bedType", label: "Bed Type", sortable: true, width: 100 },
-  { key: "occupancy", label: "Occupancy", sortable: true, width: 100 },
-  { key: "view", label: "View", sortable: false, width: 130 },
+  { key: "roomType", label: "Room Type", sortable: true, width: 120 },
+  { key: "bedConfiguration", label: "Bed Configuration", sortable: true, width: 130 },
+  { key: "maxOccupancy", label: "Occupancy", sortable: true, width: 100 },
+  { key: "view", label: "View", sortable: false, width: 110 },
   { key: "status", label: "Status", sortable: true, width: 100 },
   { key: "actions", label: "", sortable: false, width: 150 },
 ];
@@ -48,11 +50,12 @@ const VIEW_TABS = [
 export function RoomsPage() {
   const data = useData();
   const toast = useToast();
+  const navigate = useNavigate();
   const permissions = usePermissions();
   const { selectedPropertyIds } = usePropertyContext();
   const [search, setSearch] = useState("");
   const [occupancyFilter, setOccupancyFilter] = useState("");
-  const [bedTypeFilter, setBedTypeFilter] = useState("");
+  const [roomTypeFilter, setRoomTypeFilter] = useState("");
   const [viewMode, setViewMode] = useState("active");
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
@@ -61,7 +64,6 @@ export function RoomsPage() {
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const [viewing, setViewing] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const hasPropertySelection = selectedPropertyIds.length > 0;
@@ -85,9 +87,9 @@ export function RoomsPage() {
     else { setSortKey(key); setSortDir("asc"); }
   };
 
-  const filtersActive = search || occupancyFilter || bedTypeFilter;
+  const filtersActive = search || occupancyFilter || roomTypeFilter;
   const resetFilters = () => {
-    setSearch(""); setOccupancyFilter(""); setBedTypeFilter("");
+    setSearch(""); setOccupancyFilter(""); setRoomTypeFilter("");
     setPage(1);
   };
 
@@ -96,17 +98,17 @@ export function RoomsPage() {
       usePaginatedSortedFiltered({
         data: roomsInView,
         search,
-        searchFields: ["id", "name", "bedType", "view"],
+        searchFields: ["id", "name", "roomType", "bedConfiguration", "view"],
         filters: {
-          occupancy: occupancyFilter ? Number(occupancyFilter) : "",
-          bedType: bedTypeFilter,
+          maxOccupancy: occupancyFilter ? Number(occupancyFilter) : "",
+          roomType: roomTypeFilter,
         },
         sortKey,
         sortDir,
         page,
         pageSize: PAGE_SIZE,
       }),
-    [roomsInView, search, occupancyFilter, bedTypeFilter, sortKey, sortDir, page]
+    [roomsInView, search, occupancyFilter, roomTypeFilter, sortKey, sortDir, page]
   );
 
   const visibleIds = pageData.map((r) => r.id);
@@ -123,7 +125,7 @@ export function RoomsPage() {
   ];
 
   const openCreate = () => { setEditing(null); setFormOpen(true); };
-  const openEdit = (r) => { setViewing(null); setEditing(r); setFormOpen(true); };
+  const openEdit = (r) => { setEditing(r); setFormOpen(true); };
 
   const handleSubmit = (form) => {
     if (editing) {
@@ -184,10 +186,12 @@ export function RoomsPage() {
     { label: "Room ID", value: (r) => r.id },
     { label: "Name", value: (r) => r.name },
     { label: "Property", value: (r) => propertyName(r.propertyId) },
-    { label: "Bed Type", value: (r) => r.bedType },
+    { label: "Room Type", value: (r) => r.roomType },
+    { label: "Bed Configuration", value: (r) => r.bedConfiguration },
     { label: "View", value: (r) => r.view },
     { label: "Max Adults", value: (r) => r.maxAdults },
     { label: "Max Children", value: (r) => r.maxChildren },
+    { label: "Max Occupancy", value: (r) => r.maxOccupancy },
     { label: "Status", value: (r) => r.status },
   ];
   const exportRowsData = selection.count ? roomsInView.filter((r) => selection.selected.includes(r.id)) : pageData;
@@ -227,8 +231,8 @@ export function RoomsPage() {
         <div style={{ padding: "20px 20px 0" }}>
           <div className="page-toolbar">
             <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rooms..." />
-            <Select options={["1", "2", "3", "4"]} placeholder="Occupancy" value={occupancyFilter} onChange={(e) => { setOccupancyFilter(e.target.value); setPage(1); }} style={{ maxWidth: 130 }} />
-            <Select options={BED_TYPES} placeholder="Bed Type" value={bedTypeFilter} onChange={(e) => { setBedTypeFilter(e.target.value); setPage(1); }} style={{ maxWidth: 140 }} />
+            <Select options={["1", "2", "3", "4", "5", "6"]} placeholder="Occupancy" value={occupancyFilter} onChange={(e) => { setOccupancyFilter(e.target.value); setPage(1); }} style={{ maxWidth: 130 }} />
+            <Select options={ROOM_TYPES} placeholder="Room Type" value={roomTypeFilter} onChange={(e) => { setRoomTypeFilter(e.target.value); setPage(1); }} style={{ maxWidth: 160 }} />
             {filtersActive && (
               <button className="btn btn--ghost btn--sm" onClick={resetFilters}>
                 <RotateCcw size={13} strokeWidth={2} /> Reset
@@ -278,17 +282,17 @@ export function RoomsPage() {
                   <Checkbox checked={selection.selected.includes(r.id)} onChange={() => selection.toggle(r.id)} label={`Select ${r.name}`} />
                 </td>
                 <td className="tabular table__cell-muted">{r.id}</td>
-                <td className="row-link" onClick={() => setViewing(r)}>
+                <td className="row-link" onClick={() => navigate(`/portal/rooms/${r.id}`)}>
                   <div className="table__cell-primary">{r.name}</div>
                   <div className="table__cell-muted">{r.description}</div>
                 </td>
                 <td className="table__cell-muted">{propertyName(r.propertyId)}</td>
-                <td>{r.bedType}</td>
+                <td>{r.roomType}</td>
+                <td>{r.bedConfiguration}</td>
                 <td>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                     <Users size={13} strokeWidth={2} style={{ color: "var(--color-text-faint)" }} />
                     <span className="tabular">{r.maxAdults}A / {r.maxChildren}C</span>
-                    {r.smoking && <Cigarette size={13} strokeWidth={2} style={{ color: "var(--color-text-faint)" }} />}
                   </span>
                 </td>
                 <td>{r.view}</td>
@@ -330,8 +334,6 @@ export function RoomsPage() {
         properties={selectedProperties}
         scopePropertyId={selectedProperty?.id || ""}
       />
-
-      <RoomDetailModal room={viewing} onClose={() => setViewing(null)} onEdit={openEdit} />
 
       <ImportWizard open={importOpen} onClose={() => setImportOpen(false)} defaultEntityType="rooms" />
 

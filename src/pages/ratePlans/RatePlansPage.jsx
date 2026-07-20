@@ -384,6 +384,7 @@ export function RatePlansPage() {
         initial={editing}
         roomLabel={selectedRoom?.name}
         rooms={roomOptions}
+        allRooms={data.rooms}
         scopeRoomId={scopeRoomId}
       />
 
