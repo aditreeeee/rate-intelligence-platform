@@ -8,7 +8,10 @@ import { ChevronRight } from "lucide-react";
  */
 export function Breadcrumbs({ items }) {
   const navigate = useNavigate();
-  if (!items || !items.length) return null;
+  // A single, non-navigable crumb only ever repeats the page's own title
+  // (which the Topbar already renders as the h1) — skip it rather than
+  // show a redundant one-word "trail" with nothing to navigate to.
+  if (!items || items.length <= 1) return null;
 
   return (
     <nav className="breadcrumbs" aria-label="Breadcrumb">

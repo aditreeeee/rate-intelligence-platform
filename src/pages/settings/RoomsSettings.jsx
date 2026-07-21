@@ -7,7 +7,7 @@ import { ROOM_STATUSES } from "../../mocks/rooms.js";
 import { BED_CONFIGURATIONS } from "../../mocks/roomClassification.js";
 import { useToast } from "../../context/ToastContext.jsx";
 
-export function RoomsSettings() {
+export function RoomsSettings({ showTitle = true }) {
   const toast = useToast();
   const [defaultBedType, setDefaultBedType] = useState(BED_CONFIGURATIONS[0]);
   const [defaultStatus, setDefaultStatus] = useState(ROOM_STATUSES[0]);
@@ -20,7 +20,7 @@ export function RoomsSettings() {
 
   return (
     <Card>
-      <h3 className="settings-section__title">Rooms</h3>
+      {showTitle && <h3 className="settings-section__title">Rooms</h3>}
       <p className="settings-section__desc">Defaults applied when a new room is created.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Default Bed Configuration" id="rs-bed">

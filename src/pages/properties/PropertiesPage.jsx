@@ -133,7 +133,7 @@ export function PropertiesPage() {
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (p) => { setEditing(p); setFormOpen(true); };
 
-  const handleSubmit = (form) => {
+  const handleSubmit = (form, opts) => {
     if (editing) {
       data.updateProperty({ ...editing, ...form });
       toast.success(`${form.name} updated.`);
@@ -141,7 +141,7 @@ export function PropertiesPage() {
       const created = data.addProperty(form);
       toast.success(`${created.name} created as ${created.id}.`);
     }
-    setFormOpen(false);
+    if (!opts?.keepOpen) setFormOpen(false);
   };
 
   const handleDuplicate = (p) => {

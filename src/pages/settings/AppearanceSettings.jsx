@@ -12,7 +12,6 @@ export function AppearanceSettings() {
 
   return (
     <Card>
-      <h3 className="settings-section__title">Appearance</h3>
       <p className="settings-section__desc">Personalize density and accent color. Applies instantly across the app and is remembered on this device.</p>
       <div className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Table Density" id="as-density" hint="Compact tightens row spacing across all tables.">

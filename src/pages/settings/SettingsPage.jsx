@@ -49,9 +49,9 @@ export function SettingsPage() {
 
       {active === "general" && <GeneralSettings />}
       {active === "defaults" && <DefaultsSettings />}
-      {active === "properties" && <PropertiesSettings />}
-      {active === "rooms" && <RoomsSettings />}
-      {active === "ratePlans" && <RatePlansSettings />}
+      {active === "properties" && <PropertiesSettings showTitle={false} />}
+      {active === "rooms" && <RoomsSettings showTitle={false} />}
+      {active === "ratePlans" && <RatePlansSettings showTitle={false} />}
       {active === "appearance" && <AppearanceSettings />}
 
       {active === "integrations" && permissions.canManageIntegrations && (

@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/Button.jsx";
 import { CANCELLATION_POLICIES, RATE_PLAN_STATUSES } from "../../mocks/ratePlans.js";
 import { useToast } from "../../context/ToastContext.jsx";
 
-export function RatePlansSettings() {
+export function RatePlansSettings({ showTitle = true }) {
   const toast = useToast();
   const [defaultPolicy, setDefaultPolicy] = useState(CANCELLATION_POLICIES[0]);
   const [defaultStatus, setDefaultStatus] = useState(RATE_PLAN_STATUSES[0]);
@@ -19,7 +19,7 @@ export function RatePlansSettings() {
 
   return (
     <Card>
-      <h3 className="settings-section__title">Rate Plans</h3>
+      {showTitle && <h3 className="settings-section__title">Rate Plans</h3>}
       <p className="settings-section__desc">Defaults applied when a new rate plan is created.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Default Cancellation Policy" id="rps-policy">

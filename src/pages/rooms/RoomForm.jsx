@@ -193,8 +193,8 @@ export function RoomForm({ open, onClose, onSubmit, initial, properties = [], sc
         </>
       }
     >
-      <div className="room-wizard">
-        <nav className="room-wizard__nav">
+      <div className="entity-wizard">
+        <nav className="entity-wizard__nav">
           {sections.map((s) => {
             const complete = isSectionComplete(s.key);
             const hasError = sectionHasError(s.key);
@@ -202,20 +202,20 @@ export function RoomForm({ open, onClose, onSubmit, initial, properties = [], sc
               <button
                 key={s.key}
                 type="button"
-                className={`room-wizard__nav-item ${active === s.key ? "room-wizard__nav-item--active" : ""} ${hasError ? "room-wizard__nav-item--error" : ""}`}
+                className={`entity-wizard__nav-item ${active === s.key ? "entity-wizard__nav-item--active" : ""} ${hasError ? "entity-wizard__nav-item--error" : ""}`}
                 onClick={() => setActive(s.key)}
               >
-                <span className="room-wizard__nav-icon">
+                <span className="entity-wizard__nav-icon">
                   {hasError ? <AlertCircle size={16} strokeWidth={2} /> : complete ? <Check size={16} strokeWidth={2.5} /> : <s.icon size={16} strokeWidth={2} />}
                 </span>
-                <span className="room-wizard__nav-label">{s.label}</span>
-                {s.badge != null && <span className="room-wizard__nav-badge">{s.badge}</span>}
+                <span className="entity-wizard__nav-label">{s.label}</span>
+                {s.badge != null && <span className="entity-wizard__nav-badge">{s.badge}</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="room-wizard__content">
+        <div className="entity-wizard__content">
           {!initial && active === "overview" && (
             <div className="template-picker">
               <div className="template-picker__label"><Sparkles size={13} strokeWidth={2} /> Quick-fill from a template</div>

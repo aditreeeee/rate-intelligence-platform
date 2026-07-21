@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { Search, Check, RotateCcw } from "lucide-react";
-import { featureIcon } from "../../lib/roomFeatureIcons.js";
+import { featureIcon as roomFeatureIcon } from "../../lib/roomFeatureIcons.js";
 
 const SEARCH_THRESHOLD = 8;
 
 export function FeatureChipGrid({
-  label, options = [], value, onChange, multiple = true, resetValue, hint,
+  label, options = [], value, onChange, multiple = true, resetValue, hint, getIcon = roomFeatureIcon,
 }) {
   const [query, setQuery] = useState("");
   const selected = multiple ? (value || []) : value ? [value] : [];
@@ -62,7 +62,7 @@ export function FeatureChipGrid({
         {filtered.length === 0 && <div className="multiselect__empty">No matches</div>}
         {filtered.map((opt) => {
           const isSelected = selected.includes(opt);
-          const Icon = featureIcon(opt);
+          const Icon = getIcon(opt);
           return (
             <button
               key={opt}

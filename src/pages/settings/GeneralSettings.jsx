@@ -26,7 +26,6 @@ export function GeneralSettings() {
 
   return (
     <Card>
-      <h3 className="settings-section__title">General</h3>
       <p className="settings-section__desc">Organization-wide defaults applied across the platform.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Organization Name" id="gs-org">

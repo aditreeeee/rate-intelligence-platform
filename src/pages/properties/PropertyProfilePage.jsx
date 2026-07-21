@@ -60,10 +60,10 @@ export function PropertyProfilePage() {
     );
   }
 
-  const handleSubmit = (form) => {
+  const handleSubmit = (form, opts) => {
     data.updateProperty({ ...property, ...form });
     toast.success(`${form.name} updated.`);
-    setFormOpen(false);
+    if (!opts?.keepOpen) setFormOpen(false);
   };
 
   const handleDuplicate = () => {

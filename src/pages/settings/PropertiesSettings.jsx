@@ -7,7 +7,7 @@ import { TagPicker } from "../../components/ui/TagChips.jsx";
 import { STATUSES, PROPERTY_TAGS } from "../../mocks/properties.js";
 import { useToast } from "../../context/ToastContext.jsx";
 
-export function PropertiesSettings() {
+export function PropertiesSettings({ showTitle = true }) {
   const toast = useToast();
   const [defaultStatus, setDefaultStatus] = useState("Draft");
   const [requireApproval, setRequireApproval] = useState("Yes");
@@ -20,7 +20,7 @@ export function PropertiesSettings() {
 
   return (
     <Card>
-      <h3 className="settings-section__title">Properties</h3>
+      {showTitle && <h3 className="settings-section__title">Properties</h3>}
       <p className="settings-section__desc">Defaults applied when a new property is created.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Default Status for New Properties" id="ps-status">

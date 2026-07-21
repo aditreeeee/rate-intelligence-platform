@@ -177,7 +177,7 @@ export function RatePlansPage() {
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (rp) => { setViewing(null); setEditing(rp); setFormOpen(true); };
 
-  const handleSubmit = (form) => {
+  const handleSubmit = (form, opts) => {
     if (editing) {
       data.updateRatePlan({ ...editing, ...form });
       toast.success(`${form.name} updated.`);
@@ -185,7 +185,7 @@ export function RatePlansPage() {
       const created = data.addRatePlan(form);
       toast.success(`${created.name} created as ${created.id}.`);
     }
-    setFormOpen(false);
+    if (!opts?.keepOpen) setFormOpen(false);
   };
 
   const handleDuplicate = (rp) => {
