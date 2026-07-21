@@ -101,8 +101,3 @@ export let ROOMS = [
     suiteFeatures: [],
   },
 ];
-
-export function nextRoomId() {
-  const nums = ROOMS.map((r) => Number(r.id.split("-")[1]) || 2000);
-  return `RM-${Math.max(...nums, 2000) + 1}`;
-}

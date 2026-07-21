@@ -84,5 +84,3 @@ export function getPermissions(role) {
     canAccessSettingsSection: (section) => (SETTINGS_SECTIONS_BY_ROLE[role] || []).includes(section),
   };
 }
-
-export const SETTINGS_SECTIONS = SETTINGS_SECTIONS_BY_ROLE;

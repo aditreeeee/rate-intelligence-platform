@@ -20,23 +20,6 @@ export const ROOM_OPTIONS = [
   "Connecting Room", "Adjoining Room", "Adjacent Room", "Corner Room",
   "Accessible Room", "Pet Friendly Room", "Smoking", "Non-Smoking",
 ];
-export const ACCESSIBILITY_FEATURES = [
-  "Wheelchair Accessible", "Roll-in Shower", "Grab Rails", "Visual Alarm", "Hearing Assistance",
-];
-
-// View & Location
-export const ROOM_VIEWS = [
-  "City", "Garden", "Pool", "Beach", "Ocean", "Sea", "Lake", "River", "Mountain", "Forest", "Golf Course", "Courtyard",
-];
-export const ROOM_POSITIONS = ["Ground Floor", "High Floor", "Near Elevator", "Quiet Zone", "Corner Wing"];
-
-// Amenities
-export const ROOM_AMENITIES = [
-  "Balcony", "Terrace", "Jacuzzi", "Bathtub", "Walk-in Shower", "Kitchenette",
-  "Dining Area", "Living Room", "Workspace", "Smart TV", "Coffee Machine",
-  "Mini Bar", "Safe", "Microwave", "Refrigerator", "Washing Machine",
-  "Private Pool", "Fireplace", "Club Lounge Access",
-];
 
 // Room Purpose
 export const BEST_SUITED_FOR = [

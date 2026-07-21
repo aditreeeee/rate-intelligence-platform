@@ -40,10 +40,6 @@ a { color: inherit; }
   to { opacity: 1; transform: scale(1); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
 @keyframes drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(3%, -4%) scale(1.04); }
