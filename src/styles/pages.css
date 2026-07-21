@@ -43,12 +43,6 @@
 .row-link { cursor: pointer; }
 .row-link:hover .table__cell-primary { color: var(--color-teal); text-decoration: underline; text-underline-offset: 2px; }
 
-/* ===== Detail view ===== */
-.detail-view { display: flex; flex-direction: column; gap: var(--space-5); }
-.detail-view__header { display: flex; align-items: center; gap: var(--space-4); }
-.detail-view__title { font-size: 18px; font-weight: 800; color: var(--color-text); }
-.detail-view__subtitle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); margin-top: 3px; }
-.detail-view__header-badge { margin-left: auto; }
 .detail-view__description { font-size: 13.5px; color: var(--color-text-muted); line-height: 1.6; }
 
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
