@@ -23,6 +23,7 @@ import { usePropertyContext } from "../../context/PropertyContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
+import { usePersistedState } from "../../hooks/usePersistedState.js";
 import { usePaginatedSortedFiltered } from "../../lib/format.js";
 import { ROOM_STATUSES } from "../../mocks/rooms.js";
 import { ROOM_TYPES } from "../../mocks/roomClassification.js";
@@ -57,8 +58,8 @@ export function RoomsPage() {
   const [occupancyFilter, setOccupancyFilter] = useState("");
   const [roomTypeFilter, setRoomTypeFilter] = useState("");
   const [viewMode, setViewMode] = useState("active");
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortKey, setSortKey] = usePersistedState("rooms.sortKey", "name");
+  const [sortDir, setSortDir] = usePersistedState("rooms.sortDir", "asc");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -271,9 +272,19 @@ export function RoomsPage() {
             emptyState={
               <EmptyState
                 icon={BedDouble}
-                title={archivedView ? "No archived rooms" : "No Rooms Found"}
-                message={archivedView ? "Try adjusting your filters." : "This property has no rooms yet. Add one to get started."}
-                action={!archivedView && <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Add Room</Button>}
+                title={archivedView ? "No archived rooms" : filtersActive ? "No rooms match your filters" : "No rooms yet"}
+                message={
+                  archivedView || filtersActive
+                    ? "Try adjusting your search or filters."
+                    : "Create your first room, or import one from a template."
+                }
+                action={
+                  archivedView ? null : filtersActive ? (
+                    <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Room</Button>
+                  )
+                }
               />
             }
             renderRow={(r) => (

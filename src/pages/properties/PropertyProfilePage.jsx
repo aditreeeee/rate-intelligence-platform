@@ -196,7 +196,12 @@ export function PropertyProfilePage() {
           </div>
           <div style={{ padding: 20 }}>
             {rooms.length === 0 ? (
-              <EmptyState icon={BedDouble} title="No rooms yet" message="Add a room to this property to get started." />
+              <EmptyState
+                icon={BedDouble}
+                title="No rooms yet"
+                message="Create your first room for this property, or import one from a template."
+                action={<Button variant="secondary" size="sm" icon={Plus} onClick={() => goToScoped("/portal/rooms")}>Create Room</Button>}
+              />
             ) : (
               <div className="detail-linked-list">
                 {rooms.map((r) => (
@@ -219,7 +224,12 @@ export function PropertyProfilePage() {
           </div>
           <div style={{ padding: 20 }}>
             {ratePlans.length === 0 ? (
-              <EmptyState icon={Tag} title="No rate plans yet" message="Add a rate plan to a room in this property." />
+              <EmptyState
+                icon={Tag}
+                title="No rate plans yet"
+                message="Create your first rate plan for a room in this property, or import one from a template."
+                action={<Button variant="secondary" size="sm" icon={Plus} onClick={() => goToScoped("/portal/rate-plans")}>Create Rate Plan</Button>}
+              />
             ) : (
               <div className="detail-linked-list">
                 {ratePlans.map((rp) => {

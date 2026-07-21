@@ -23,6 +23,7 @@ import { usePropertyContext } from "../../context/PropertyContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
+import { usePersistedState } from "../../hooks/usePersistedState.js";
 import { usePaginatedSortedFiltered, formatCurrency } from "../../lib/format.js";
 import { MEAL_PLANS, RATE_PLAN_STATUSES, mealPlanLabel } from "../../mocks/ratePlans.js";
 import { getCurrentActivePeriod } from "../../lib/pricingPeriods.js";
@@ -62,8 +63,8 @@ export function RatePlansPage() {
   const [search, setSearch] = useState("");
   const [mealPlanFilter, setMealPlanFilter] = useState("");
   const [viewMode, setViewMode] = useState("active");
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortKey, setSortKey] = usePersistedState("ratePlans.sortKey", "name");
+  const [sortDir, setSortDir] = usePersistedState("ratePlans.sortDir", "asc");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -309,9 +310,19 @@ export function RatePlansPage() {
             emptyState={
               <EmptyState
                 icon={Tag}
-                title={archivedView ? "No archived rate plans" : "No Rate Plans Found"}
-                message={archivedView ? "Try adjusting your filters." : "This selection has no rate plans yet. Add one to get started."}
-                action={!archivedView && <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Add Rate Plan</Button>}
+                title={archivedView ? "No archived rate plans" : filtersActive ? "No rate plans match your filters" : "No rate plans yet"}
+                message={
+                  archivedView || filtersActive
+                    ? "Try adjusting your search or filters."
+                    : "Create your first rate plan, or import one from a template."
+                }
+                action={
+                  archivedView ? null : filtersActive ? (
+                    <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Rate Plan</Button>
+                  )
+                }
               />
             }
             renderRow={(rp) => {

@@ -13,6 +13,7 @@ import { Select } from "../../components/ui/Input.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { StatusBadge } from "../../components/ui/Badge.jsx";
 import { EmptyState } from "../../components/ui/EmptyState.jsx";
+import { AnimatedNumber } from "../../components/ui/AnimatedNumber.jsx";
 import { ConfirmModal } from "../../components/ui/Modal.jsx";
 import { Checkbox } from "../../components/ui/Checkbox.jsx";
 import { BulkActionBar } from "../../components/ui/BulkActionBar.jsx";
@@ -23,6 +24,7 @@ import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
+import { usePersistedState } from "../../hooks/usePersistedState.js";
 import { usePaginatedSortedFiltered, formatDate } from "../../lib/format.js";
 import { STATUSES, PROPERTY_TYPES } from "../../mocks/properties.js";
 import { PropertyForm } from "./PropertyForm.jsx";
@@ -55,8 +57,8 @@ export function PropertiesPage() {
   const [countryFilter, setCountryFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [starFilter, setStarFilter] = useState("");
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortKey, setSortKey] = usePersistedState("properties.sortKey", "name");
+  const [sortDir, setSortDir] = usePersistedState("properties.sortDir", "asc");
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -223,7 +225,7 @@ export function PropertiesPage() {
           >
             <div className="stat-card__icon"><s.icon size={20} strokeWidth={2} /></div>
             <div className="stat-card__body">
-              <div className="stat-card__value tabular">{s.value}</div>
+              <div className="stat-card__value tabular"><AnimatedNumber value={s.value} /></div>
               <div className="stat-card__label">{s.label}</div>
             </div>
             <ArrowUpRight size={16} strokeWidth={2} className="stat-card__arrow" />
@@ -281,9 +283,19 @@ export function PropertiesPage() {
             emptyState={
               <EmptyState
                 icon={Building2}
-                title="No properties found"
-                message="Try adjusting your search or filters, or add a new property."
-                action={<Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Add Property</Button>}
+                title={filtersActive ? "No properties match your filters" : "No properties yet"}
+                message={
+                  filtersActive
+                    ? "Try adjusting your search or filters."
+                    : "Create your first property, or import a batch from a spreadsheet."
+                }
+                action={
+                  filtersActive ? (
+                    <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Property</Button>
+                  )
+                }
               />
             }
             renderRow={(p) => (

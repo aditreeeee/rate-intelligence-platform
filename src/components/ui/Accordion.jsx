@@ -22,7 +22,9 @@ export function AccordionSection({ title, icon: IconEl, badge, defaultOpen = fal
         </span>
         <ChevronDown size={16} strokeWidth={2} className="accordion__chevron" />
       </button>
-      {open && <div className="accordion__body">{children}</div>}
+      <div className="accordion__panel" aria-hidden={!open}>
+        <div className="accordion__body">{children}</div>
+      </div>
     </div>
   );
 }

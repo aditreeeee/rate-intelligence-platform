@@ -11,6 +11,8 @@ export function GlobalSearch() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -18,6 +20,21 @@ export function GlobalSearch() {
     };
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setOpen(true);
+      } else if (e.key === "Escape" && document.activeElement === inputRef.current) {
+        inputRef.current?.blur();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const results = useMemo(() => {
@@ -52,6 +69,7 @@ export function GlobalSearch() {
       <div className="global-search__field">
         <Search size={16} strokeWidth={2} className="global-search__icon" />
         <input
+          ref={inputRef}
           className="global-search__input"
           placeholder="Search properties, rooms, rate plans..."
           value={query}
@@ -61,10 +79,12 @@ export function GlobalSearch() {
             setOpen(true);
           }}
         />
-        {query && (
+        {query ? (
           <button className="global-search__clear" onClick={() => setQuery("")} aria-label="Clear search">
             <X size={14} strokeWidth={2} />
           </button>
+        ) : (
+          <kbd className="global-search__kbd">{isMac ? "⌘" : "Ctrl"}K</kbd>
         )}
       </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   BedDouble, MapPin, Pencil, Copy, Archive, RotateCcw, Trash2,
-  LayoutGrid, Layers, Users, Sofa, Eye, Accessibility, Heart, Tag, StickyNote,
+  LayoutGrid, Layers, Users, Sofa, Eye, Accessibility, Heart, Tag, StickyNote, Plus,
 } from "lucide-react";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
 import { Tabs } from "../../components/ui/Tabs.jsx";
@@ -226,7 +226,12 @@ export function RoomProfilePage() {
           </div>
           <div style={{ padding: 20 }}>
             {ratePlans.length === 0 ? (
-              <EmptyState icon={Tag} title="No rate plans yet" message="Add a rate plan linked to this room." />
+              <EmptyState
+                icon={Tag}
+                title="No rate plans yet"
+                message="Create your first rate plan for this room, or import one from a template."
+                action={<Button variant="secondary" size="sm" icon={Plus} onClick={() => navigate("/portal/rate-plans")}>Create Rate Plan</Button>}
+              />
             ) : (
               <div className="detail-linked-list">
                 {ratePlans.map((rp) => {

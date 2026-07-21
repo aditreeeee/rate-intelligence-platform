@@ -12,6 +12,8 @@
   height: 100vh;
 }
 .sidebar__brand { display: flex; align-items: center; gap: 12px; padding: 0 var(--space-2) var(--space-8); }
+.sidebar__close { display: none; margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 4px; border-radius: 8px; transition: all var(--transition-fast); }
+.sidebar__close:hover { background: rgba(255,255,255,0.1); color: white; }
 .sidebar__brand-icon { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, var(--color-surf), var(--color-teal)); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .sidebar__brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .sidebar__brand-title { color: white; font-weight: 800; font-size: 14px; letter-spacing: 0.01em; }
@@ -68,7 +70,29 @@
 .stat-card--clickable:active { transform: translateY(0) scale(0.99); }
 .stat-card--clickable:focus-visible { outline: 2px solid var(--color-surf); outline-offset: 3px; }
 
+.mobile-nav-toggle {
+  display: none; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1.5px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-twilight); cursor: pointer; margin-bottom: var(--space-4);
+  transition: all var(--transition-fast);
+}
+.mobile-nav-toggle:hover { border-color: var(--color-frosted); background: var(--color-surface-alt); }
+
+.sidebar-backdrop {
+  position: fixed; inset: 0; background: rgba(3, 4, 94, 0.46);
+  backdrop-filter: blur(2px); z-index: 49; animation: fadeIn 180ms var(--ease-out);
+}
+
+.page-transition { animation: fadeIn 220ms var(--ease-out); }
+
 @media (max-width: 960px) {
-  .sidebar { position: fixed; left: -260px; z-index: 50; transition: left var(--transition-base); }
+  .sidebar { position: fixed; left: -280px; z-index: 50; transition: left var(--transition-base); width: 268px; }
+  .sidebar--open { left: 0; box-shadow: var(--shadow-lg); }
+  .sidebar__close { display: flex; }
   .portal-main { padding: var(--space-5); }
+  .mobile-nav-toggle { display: flex; }
+}
+
+@media (min-width: 961px) {
+  .sidebar-backdrop { display: none; }
 }
