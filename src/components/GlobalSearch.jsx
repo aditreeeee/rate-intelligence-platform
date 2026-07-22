@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Building2, BedDouble, Tag, X } from "lucide-react";
+import { Search, Building2, BedDouble, Tag, Target, Award, X } from "lucide-react";
 import { useData } from "../context/DataContext.jsx";
 
 const MAX_PER_GROUP = 4;
@@ -39,7 +39,7 @@ export function GlobalSearch() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return { properties: [], rooms: [], ratePlans: [] };
+    if (!q) return { properties: [], rooms: [], ratePlans: [], comparisonGroups: [], competitors: [] };
 
     const properties = data.properties
       .filter((p) => [p.id, p.name, p.city, p.country].some((f) => String(f).toLowerCase().includes(q)))
@@ -53,10 +53,23 @@ export function GlobalSearch() {
       .filter((rp) => [rp.id, rp.name].some((f) => String(f).toLowerCase().includes(q)))
       .slice(0, MAX_PER_GROUP);
 
-    return { properties, rooms, ratePlans };
-  }, [query, data.properties, data.rooms, data.ratePlans]);
+    const comparisonGroups = data.comparisonGroups
+      .filter((g) => [g.id, g.name, g.market].some((f) => String(f || "").toLowerCase().includes(q)))
+      .slice(0, MAX_PER_GROUP);
 
-  const hasResults = results.properties.length || results.rooms.length || results.ratePlans.length;
+    const competitors = data.competitors
+      .filter((c) => {
+        const propertyName = data.properties.find((p) => p.id === c.propertyId)?.name;
+        return [c.id, c.hotelName, propertyName, c.city, c.country].some((f) => String(f || "").toLowerCase().includes(q));
+      })
+      .slice(0, MAX_PER_GROUP);
+
+    return { properties, rooms, ratePlans, comparisonGroups, competitors };
+  }, [query, data.properties, data.rooms, data.ratePlans, data.comparisonGroups, data.competitors]);
+
+  const hasResults =
+    results.properties.length || results.rooms.length || results.ratePlans.length ||
+    results.comparisonGroups.length || results.competitors.length;
 
   const goTo = (path) => {
     navigate(path);
@@ -71,7 +84,7 @@ export function GlobalSearch() {
         <input
           ref={inputRef}
           className="global-search__input"
-          placeholder="Search properties, rooms, rate plans..."
+          placeholder="Search properties, rooms, rate plans, competitors..."
           value={query}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -123,6 +136,30 @@ export function GlobalSearch() {
                 <button key={rp.id} className="global-search__item" onClick={() => goTo("/portal/rate-plans")}>
                   <span className="global-search__item-name">{rp.name}</span>
                   <span className="global-search__item-meta tabular">{rp.id}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {results.comparisonGroups.length > 0 && (
+            <div className="global-search__group">
+              <div className="global-search__group-label"><Target size={12} strokeWidth={2} /> Comparison Groups</div>
+              {results.comparisonGroups.map((g) => (
+                <button key={g.id} className="global-search__item" onClick={() => goTo(`/portal/comparison-groups/${g.id}`)}>
+                  <span className="global-search__item-name">{g.name}</span>
+                  <span className="global-search__item-meta tabular">{g.id}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {results.competitors.length > 0 && (
+            <div className="global-search__group">
+              <div className="global-search__group-label"><Award size={12} strokeWidth={2} /> Competitors</div>
+              {results.competitors.map((c) => (
+                <button key={c.id} className="global-search__item" onClick={() => goTo(`/portal/competitors/${c.id}`)}>
+                  <span className="global-search__item-name">{c.hotelName}</span>
+                  <span className="global-search__item-meta tabular">{c.city}, {c.country}</span>
                 </button>
               ))}
             </div>

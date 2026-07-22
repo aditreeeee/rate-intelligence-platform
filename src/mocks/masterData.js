@@ -150,3 +150,12 @@ export const RATE_SEASONS_MASTER = [
     archived: false,
   },
 ];
+
+// Source Types (Phase 2 — Competitor Configuration's Source Configuration
+// module). Deliberately a plain `{id,name}` master table like Room Types/
+// Amenities rather than a hardcoded enum, so new source types (beyond the
+// defaults below) can be added through the same generic MasterDataManager
+// without touching any component.
+export const SOURCE_TYPES_MASTER = [
+  "Direct Website", "Booking.com", "Expedia", "Agoda", "Hotels.com", "Google Hotels",
+].map((name, i) => ({ id: `SRCT-${1000 + i}`, name }));

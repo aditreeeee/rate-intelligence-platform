@@ -42,18 +42,50 @@
 .portal-main { flex: 1; padding: var(--space-8) var(--space-10); min-width: 0; }
 
 .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-8); gap: var(--space-4); flex-wrap: wrap; }
+.topbar__left { flex: 1 1 420px; min-width: 0; max-width: 640px; }
 .topbar__title { font-size: 30px; color: var(--color-twilight); }
 .topbar__subtitle { color: var(--color-text-muted); margin-top: 6px; font-size: 14px; }
-.topbar__right { display: flex; align-items: center; gap: var(--space-5); }
-.topbar__user { display: flex; align-items: center; gap: 10px; }
-.topbar__avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--color-surf), var(--color-twilight)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-.topbar__user-info { display: flex; flex-direction: column; line-height: 1.3; }
-.topbar__user-name { font-weight: 700; font-size: 13px; color: var(--color-text); }
-.topbar__user-role { font-size: 12px; color: var(--color-text-faint); }
+/* Always pinned to the far right of the header, never squeezed or wrapped
+   underneath a long title/subtitle — `.topbar__left` caps its own width
+   (above) and this stays a fixed-size flex item on the opposite end. */
+.topbar__right { display: flex; align-items: center; gap: var(--space-4); flex-shrink: 0; margin-left: auto; }
+
+/* ===== Profile menu (single compact header profile control) ===== */
+.profile-menu { position: relative; }
+.profile-menu__trigger {
+  display: flex; align-items: center; gap: 8px; height: 42px; padding: 4px 10px 4px 4px;
+  border-radius: 999px; border: 1.5px solid transparent; background: none; cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.profile-menu__trigger:hover { background: var(--color-surface-alt); border-color: var(--color-border); }
+.profile-menu__avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--color-surf), var(--color-twilight)); color: white;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12.5px;
+}
+.profile-menu__avatar--lg { width: 44px; height: 44px; font-size: 15px; }
+.profile-menu__name { font-weight: 700; font-size: 13px; color: var(--color-text); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-menu__chevron { color: var(--color-text-faint); transition: transform var(--transition-fast); flex-shrink: 0; }
+.profile-menu__chevron--open { transform: rotate(180deg); }
+.profile-menu__panel { left: auto; right: 0; width: 260px; padding: var(--space-3); }
+.profile-menu__header { display: flex; align-items: flex-start; gap: 10px; padding: 2px 6px 10px; }
+.profile-menu__header-info { min-width: 0; }
+.profile-menu__header-name { font-weight: 800; font-size: 14px; color: var(--color-text); }
+.profile-menu__header-email {
+  display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-text-faint);
+  margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.profile-menu__role { margin-top: 6px; }
+.profile-menu__divider { height: 1px; background: var(--color-border); margin: 6px 2px; }
 
 .page-section { margin-bottom: var(--space-8); }
 .page-toolbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); flex-wrap: wrap; }
 .page-toolbar__spacer { flex: 1; }
+
+/* Opt-in content-width cap for dense, KPI-heavy pages (e.g. a Comparison
+   Group's profile) — most list pages intentionally use the full width for
+   wide tables, so this is a modifier, not a change to `.portal-main`. */
+.page-container--narrow { max-width: 1280px; margin: 0 auto; }
 
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
 .stat-card { display: flex; align-items: center; gap: 14px; }
@@ -69,6 +101,33 @@
 .stat-card--clickable:hover .stat-card__arrow { opacity: 1; transform: translate(0, 0); color: var(--color-teal); }
 .stat-card--clickable:active { transform: translateY(0) scale(0.99); }
 .stat-card--clickable:focus-visible { outline: 2px solid var(--color-surf); outline-offset: 3px; }
+
+/* Equal-width/equal-height KPI row (Comparison Group profile header KPIs) —
+   a stricter variant of `.stat-row`: fixed column count instead of
+   auto-fit, and stretched card height so a long value (e.g. a benchmark
+   hotel name) never makes one tile taller than its siblings. */
+.stat-row--kpi { grid-template-columns: repeat(6, 1fr); align-items: stretch; margin-bottom: 0; }
+.stat-row--kpi .stat-card { height: 100%; min-height: 84px; }
+.stat-row--kpi .stat-card__value { font-size: 20px; }
+.stat-row--kpi .stat-card__value--text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1100px) { .stat-row--kpi { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .stat-row--kpi { grid-template-columns: repeat(2, 1fr); } }
+
+/* Miniature circular progress indicator used inside a KPI tile's icon slot
+   in place of a plain icon, for percentage-based KPIs (readiness/mapping/
+   coverage) — same conic-gradient technique as `.readiness-ring`, just
+   sized to sit inline in a stat card. */
+.kpi-ring {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: conic-gradient(var(--ring-color, var(--color-teal)) calc(var(--ring-pct, 0) * 1%), var(--color-surface-alt) 0);
+  transition: transform var(--transition-base);
+}
+.stat-card--clickable:hover .kpi-ring { transform: scale(1.06); }
+.kpi-ring__value { background: var(--color-surface); width: 33px; height: 33px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: var(--color-twilight); }
+.kpi-ring--success { --ring-color: var(--color-success); }
+.kpi-ring--warning { --ring-color: var(--color-warning); }
+.kpi-ring--danger { --ring-color: var(--color-danger); }
 
 .mobile-nav-toggle {
   display: none; align-items: center; justify-content: center;

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
-  Building2, BedDouble, Tag, UploadCloud, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight,
+  Building2, BedDouble, Tag, Target, Link2, UploadCloud, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight,
 } from "lucide-react";
 import { Modal } from "./Modal.jsx";
 import { Button } from "./Button.jsx";
@@ -10,6 +10,10 @@ const ENTITY_TYPES = [
   { key: "properties", label: "Properties", icon: Building2, requiredFields: ["name", "country", "city"] },
   { key: "rooms", label: "Rooms", icon: BedDouble, requiredFields: ["name", "roomType"] },
   { key: "ratePlans", label: "Rate Plans", icon: Tag, requiredFields: ["name", "roomId"] },
+  { key: "competitors", label: "Competitors", icon: Target, requiredFields: ["hotelName", "country", "city"] },
+  { key: "competitorUrls", label: "URLs", icon: Link2, requiredFields: ["label", "url"] },
+  { key: "roomMapping", label: "Room Mapping", icon: BedDouble, requiredFields: ["internalRoomId", "competitorRoomLabel"] },
+  { key: "ratePlanMapping", label: "Rate Plan Mapping", icon: Tag, requiredFields: ["internalRatePlanId", "competitorRatePlanName"] },
 ];
 
 const STEP_LABELS = ["Select Type", "Upload File", "Validate", "Preview & Confirm"];

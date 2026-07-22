@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { SlidersHorizontal, LayoutList, PlugZap, Palette, Building2, BedDouble, Tag } from "lucide-react";
+import { SlidersHorizontal, LayoutList, PlugZap, Palette, Building2, BedDouble, Tag, Target } from "lucide-react";
 import { Topbar } from "../../components/layout/Topbar.jsx";
 import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
@@ -11,6 +11,7 @@ import { AppearanceSettings } from "./AppearanceSettings.jsx";
 import { PropertiesSettings } from "./PropertiesSettings.jsx";
 import { RoomsSettings } from "./RoomsSettings.jsx";
 import { RatePlansSettings } from "./RatePlansSettings.jsx";
+import { CompetitorConfigSettings } from "./CompetitorConfigSettings.jsx";
 import { usePermissions } from "../../hooks/usePermissions.js";
 
 // Full catalog of settings tabs. Which ones actually render is decided by
@@ -22,6 +23,7 @@ const ALL_TABS = [
   { key: "properties", label: "Properties", icon: Building2 },
   { key: "rooms", label: "Rooms", icon: BedDouble },
   { key: "ratePlans", label: "Rate Plans", icon: Tag },
+  { key: "competitorConfig", label: "Configuration Settings", icon: Target },
   { key: "integrations", label: "Integrations", icon: PlugZap },
   { key: "appearance", label: "Appearance", icon: Palette },
 ];
@@ -52,6 +54,7 @@ export function SettingsPage() {
       {active === "properties" && <PropertiesSettings showTitle={false} />}
       {active === "rooms" && <RoomsSettings showTitle={false} />}
       {active === "ratePlans" && <RatePlansSettings showTitle={false} />}
+      {active === "competitorConfig" && <CompetitorConfigSettings />}
       {active === "appearance" && <AppearanceSettings />}
 
       {active === "integrations" && permissions.canManageIntegrations && (

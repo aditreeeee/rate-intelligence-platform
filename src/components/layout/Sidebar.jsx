@@ -1,12 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Building2, BedDouble, Tag, Settings, LogOut, Radar, X } from "lucide-react";
+import { Building2, BedDouble, Tag, Target, Settings, LogOut, Radar, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const NAV_ITEMS = [
   { to: "/portal/properties", label: "Properties", icon: Building2 },
   { to: "/portal/rooms", label: "Rooms", icon: BedDouble },
   { to: "/portal/rate-plans", label: "Rate Plans", icon: Tag },
+  { to: "/portal/competitors", label: "Competitors", icon: Target },
   { to: "/portal/settings", label: "Settings", icon: Settings },
 ];
 

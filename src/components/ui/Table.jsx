@@ -7,10 +7,19 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 // surrounding card/toolbar/pagination from jumping around every time a
 // filter change (or property selection change) drives the row count to 0
 // and back.
-export function Table({ columns, data, sortKey, sortDir, onSort, renderRow, rowKey, emptyState }) {
+export function Table({ columns, data, sortKey, sortDir, onSort, renderRow, rowKey, emptyState, stickyHeader = false, minWidth }) {
+  // `table-layout: fixed` + `width: 100%` (see components.css) means a
+  // column left without an explicit width (e.g. the "widest" Hotel/Name
+  // column) only gets the container's *remaining* space — which, once a
+  // grid has many fixed-width columns, can shrink to a few unreadable
+  // pixels on anything narrower than a very wide monitor, instead of
+  // triggering the horizontal scrollbar `.table-scroll` provides. Passing
+  // `minWidth` (the sum of every column's width, including a sane floor for
+  // the flexible one) guarantees that never happens: below that width the
+  // table scrolls instead of squeezing a column into illegibility.
   return (
     <div className="table-scroll">
-      <table className="table" style={{ tableLayout: "fixed" }}>
+      <table className={`table ${stickyHeader ? "table--sticky-header" : ""}`} style={{ tableLayout: "fixed", minWidth: minWidth || undefined }}>
         <colgroup>
           {columns.map((col) => (
             <col key={col.key} style={col.width ? { width: col.width } : undefined} />

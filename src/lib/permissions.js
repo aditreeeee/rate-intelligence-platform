@@ -16,10 +16,14 @@ export const ROLES = {
 };
 
 // Settings tabs each role is allowed to see. Keys must match the `key`
-// used in SettingsPage's tab definitions.
+// used in SettingsPage's tab definitions. "competitorConfig" is Phase 2's
+// Configuration Settings category — a top-level tab inside this same
+// Settings module (General/Comparison Rules/Room Mapping/Rate Plan
+// Mapping/Sources & URL Validation/Import & Export live inside it via its
+// own nested tab bar), not a separate settings page/route.
 const SETTINGS_SECTIONS_BY_ROLE = {
-  [ROLES.SUPER_ADMIN]: ["general", "defaults", "integrations", "appearance"],
-  [ROLES.PROPERTY_OWNER]: ["general", "defaults", "appearance"],
+  [ROLES.SUPER_ADMIN]: ["general", "defaults", "competitorConfig", "integrations", "appearance"],
+  [ROLES.PROPERTY_OWNER]: ["general", "defaults", "competitorConfig", "appearance"],
 };
 
 const BASE_PERMISSIONS = {
@@ -42,6 +46,13 @@ const BASE_PERMISSIONS = {
   // Integrations surface (Settings tab, KPI card, anywhere else)
   canManageIntegrations: false,
   canViewIntegrations: false,
+
+  // Phase 2 — Competitor Configuration lifecycle. One flag covers the whole
+  // module (Comparison Groups, Competitors, Mappings, Sources, URLs) since
+  // Phase 2 has no finer-grained sub-roles yet, mirroring how Rooms/Rate
+  // Plans only split "create" from "delete permanently."
+  canManageCompetitors: false,
+  canDeleteComparisonGroupPermanently: false,
 };
 
 const PERMISSIONS_BY_ROLE = {
@@ -56,6 +67,8 @@ const PERMISSIONS_BY_ROLE = {
     canDeleteRatePlanPermanently: true,
     canManageIntegrations: true,
     canViewIntegrations: true,
+    canManageCompetitors: true,
+    canDeleteComparisonGroupPermanently: true,
   },
   [ROLES.PROPERTY_OWNER]: {
     ...BASE_PERMISSIONS,
@@ -68,6 +81,8 @@ const PERMISSIONS_BY_ROLE = {
     canDeleteRatePlanPermanently: false,
     canManageIntegrations: false,
     canViewIntegrations: false,
+    canManageCompetitors: true,
+    canDeleteComparisonGroupPermanently: false,
   },
 };
 
