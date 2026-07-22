@@ -7,7 +7,7 @@ import { ToastProvider } from "./context/ToastContext.jsx";
 import { AppearanceProvider } from "./context/AppearanceContext.jsx";
 import { AuthGuard } from "./components/layout/AuthGuard.jsx";
 import { PortalLayout } from "./components/layout/PortalLayout.jsx";
-import { Login } from "./pages/Login.jsx";
+import { Login } from "./pages/index.jsx";
 import { PropertiesPage } from "./pages/properties/PropertiesPage.jsx";
 import { PropertyProfilePage } from "./pages/properties/PropertyProfilePage.jsx";
 import { RoomsPage } from "./pages/rooms/RoomsPage.jsx";
