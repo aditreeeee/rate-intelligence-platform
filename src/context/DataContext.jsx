@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from "react";
 import { PROPERTIES } from "../mocks/properties.js";
 import { ROOMS } from "../mocks/rooms.js";
-import { RATE_PLANS } from "../mocks/ratePlans.js";
-import { ROOM_TYPES_MASTER, AMENITIES_MASTER, ROOM_TEMPLATES_MASTER, RATE_SEASONS_MASTER, SOURCE_TYPES_MASTER } from "../mocks/masterData.js";
-import { COMPARISON_GROUPS, COMPETITORS, GROUP_MEMBERSHIPS, ROOM_MAPPINGS, RATE_PLAN_MAPPINGS, SOURCE_CONFIGS, URL_RECORDS } from "../mocks/competitors.js";
+import { RATE_PLANS, RATE_PLAN_ROOMS, PRICING_RANGES } from "../mocks/ratePlans.js";
+import { ROOM_TYPES_MASTER, AMENITIES_MASTER, ROOM_TEMPLATES_MASTER, SOURCE_TYPES_MASTER } from "../mocks/masterData.js";
+import { COMP_SETS, COMPETITORS, COMP_SET_MEMBERSHIPS, ROOM_MAPPINGS, RATE_PLAN_MAPPINGS, SOURCE_CONFIGS } from "../mocks/competitors.js";
 import { useAuth } from "./AuthContext.jsx";
 import { getPermissions } from "../lib/permissions.js";
 
@@ -13,31 +13,40 @@ const initialState = {
   properties: PROPERTIES,
   rooms: ROOMS,
   ratePlans: RATE_PLANS,
+  // Rate Plan Rooms — the room-specific layer beneath a Rate Plan (own `id`,
+  // FK `ratePlanId` + `roomId`). A Rate Plan can apply to multiple Rooms,
+  // each its own record here. See mocks/ratePlans.js for the full rationale.
+  ratePlanRooms: RATE_PLAN_ROOMS,
+  // Pricing Ranges — a proper child collection of Rate Plan Rooms (own
+  // `id`, FK `ratePlanRoomId`), the same shape RATE_PLAN_MAPPINGS uses to
+  // reference `internalRatePlanId`. See mocks/ratePlans.js for why this is
+  // modeled as a table rather than an inline array.
+  pricingRanges: PRICING_RANGES,
   // Phase 2 (Competitor Configuration) collections. Competitors are owned
   // directly by a Property (`propertyId`) — the primary collection. Rate/
-  // Room Mapping, Source Configuration, and URL records are owned directly
-  // by a Competitor (`competitorId`). Comparison Groups are a pure, optional
+  // Room Mapping and Source Configuration (which also absorbs what used to
+  // be a separate URL Manager/`urlRecords` collection — see mocks/
+  // competitors.js) are owned directly by a Competitor (`competitorId`).
+  // Competitive Sets are a pure, optional
   // tagging layer: they never own a competitor, they only *reference* one
-  // via `groupMemberships` (a many-to-many bridge table). Phase 1 mock data
+  // via `compSetMemberships` (a many-to-many bridge table). Phase 1 mock data
   // is never written to from here — Phase 1 is read-only reference data.
-  comparisonGroups: COMPARISON_GROUPS,
+  compSets: COMP_SETS,
   competitors: COMPETITORS,
-  groupMemberships: GROUP_MEMBERSHIPS,
+  compSetMemberships: COMP_SET_MEMBERSHIPS,
   roomMappings: ROOM_MAPPINGS,
   ratePlanMappings: RATE_PLAN_MAPPINGS,
   sourceConfigs: SOURCE_CONFIGS,
-  urlRecords: URL_RECORDS,
   masters: {
     roomTypes: ROOM_TYPES_MASTER,
     amenities: AMENITIES_MASTER,
     roomTemplates: ROOM_TEMPLATES_MASTER,
-    rateSeasons: RATE_SEASONS_MASTER,
     sourceTypes: SOURCE_TYPES_MASTER,
   },
 };
 
-// Phase 2 collections (comparisonGroups, competitors, roomMappings,
-// ratePlanMappings, sourceConfigs, urlRecords) follow the exact same
+// Phase 2 collections (compSets, competitors, roomMappings,
+// ratePlanMappings, sourceConfigs) follow the exact same
 // lifecycle shape as Rooms/Rate Plans (add/update/archive/restore/delete/
 // duplicate/bulk-*), just generalized by `collection` key instead of one
 // reducer case per verb per entity — the same "parameterize by table name"
@@ -87,35 +96,77 @@ function reducer(state, action) {
       return { ...state, rooms: [action.payload, ...state.rooms] };
     case "UPDATE_ROOM":
       return { ...state, rooms: state.rooms.map((r) => (r.id === action.payload.id ? action.payload : r)) };
-    case "DELETE_ROOM":
+    // Deleting a Room only cascades to the Rate Plan Rooms that reference it
+    // (and their own Pricing Ranges) — NOT to the parent Rate Plan(s), which may
+    // still apply to other rooms and remain a valid, if incomplete, record
+    // (consistent with this codebase's philosophy of optional/incremental
+    // configuration, e.g. Competitors' optional Comp Set groups).
+    case "DELETE_ROOM": {
+      const orphanedRatePlanRoomIds = state.ratePlanRooms.filter((rp) => rp.roomId === action.payload).map((rp) => rp.id);
       return {
         ...state,
         rooms: state.rooms.filter((r) => r.id !== action.payload),
-        ratePlans: state.ratePlans.filter((rp) => rp.roomId !== action.payload),
+        ratePlanRooms: state.ratePlanRooms.filter((rp) => rp.roomId !== action.payload),
+        pricingRanges: state.pricingRanges.filter((pr) => !orphanedRatePlanRoomIds.includes(pr.ratePlanRoomId)),
       };
+    }
     case "BULK_UPDATE_ROOMS":
       return { ...state, rooms: state.rooms.map((r) => (action.ids.includes(r.id) ? action.updater(r) : r)) };
     case "BULK_ADD_ROOMS":
       return { ...state, rooms: [...action.payload, ...state.rooms] };
-    case "BULK_DELETE_ROOMS":
+    case "BULK_DELETE_ROOMS": {
+      const orphanedRatePlanRoomIds = state.ratePlanRooms.filter((rp) => action.ids.includes(rp.roomId)).map((rp) => rp.id);
       return {
         ...state,
         rooms: state.rooms.filter(notInSet(action.ids)),
-        ratePlans: state.ratePlans.filter((rp) => !action.ids.includes(rp.roomId)),
+        ratePlanRooms: state.ratePlanRooms.filter((rp) => !action.ids.includes(rp.roomId)),
+        pricingRanges: state.pricingRanges.filter((pr) => !orphanedRatePlanRoomIds.includes(pr.ratePlanRoomId)),
       };
+    }
 
     case "ADD_RATE_PLAN":
       return { ...state, ratePlans: [action.payload, ...state.ratePlans] };
     case "UPDATE_RATE_PLAN":
       return { ...state, ratePlans: state.ratePlans.map((rp) => (rp.id === action.payload.id ? action.payload : rp)) };
-    case "DELETE_RATE_PLAN":
-      return { ...state, ratePlans: state.ratePlans.filter((rp) => rp.id !== action.payload) };
+    // Deleting a Rate Plan permanently cascades two levels deep: all of its
+    // Rate Plan Rooms, and all of those Rooms' own Pricing Range rows.
+    case "DELETE_RATE_PLAN": {
+      const orphanedRatePlanRoomIds = state.ratePlanRooms.filter((rp) => rp.ratePlanId === action.payload).map((rp) => rp.id);
+      return {
+        ...state,
+        ratePlans: state.ratePlans.filter((rp) => rp.id !== action.payload),
+        ratePlanRooms: state.ratePlanRooms.filter((rp) => rp.ratePlanId !== action.payload),
+        pricingRanges: state.pricingRanges.filter((pr) => !orphanedRatePlanRoomIds.includes(pr.ratePlanRoomId)),
+      };
+    }
     case "BULK_UPDATE_RATE_PLANS":
       return { ...state, ratePlans: state.ratePlans.map((rp) => (action.ids.includes(rp.id) ? action.updater(rp) : rp)) };
     case "BULK_ADD_RATE_PLANS":
       return { ...state, ratePlans: [...action.payload, ...state.ratePlans] };
-    case "BULK_DELETE_RATE_PLANS":
-      return { ...state, ratePlans: state.ratePlans.filter(notInSet(action.ids)) };
+    case "BULK_DELETE_RATE_PLANS": {
+      const orphanedRatePlanRoomIds = state.ratePlanRooms.filter((rp) => action.ids.includes(rp.ratePlanId)).map((rp) => rp.id);
+      return {
+        ...state,
+        ratePlans: state.ratePlans.filter(notInSet(action.ids)),
+        ratePlanRooms: state.ratePlanRooms.filter((rp) => !action.ids.includes(rp.ratePlanId)),
+        pricingRanges: state.pricingRanges.filter((pr) => !orphanedRatePlanRoomIds.includes(pr.ratePlanRoomId)),
+      };
+    }
+
+    // Deleting a Rate Plan Room permanently cascades to its own Pricing Range
+    // rows — nothing else references a pricing-range id.
+    case "DELETE_RATE_PLAN_ROOM_CASCADE":
+      return {
+        ...state,
+        ratePlanRooms: state.ratePlanRooms.filter((rp) => rp.id !== action.payload),
+        pricingRanges: state.pricingRanges.filter((pr) => pr.ratePlanRoomId !== action.payload),
+      };
+    case "BULK_DELETE_RATE_PLAN_ROOMS_CASCADE":
+      return {
+        ...state,
+        ratePlanRooms: state.ratePlanRooms.filter(notInSet(action.ids)),
+        pricingRanges: state.pricingRanges.filter((pr) => !action.ids.includes(pr.ratePlanRoomId)),
+      };
 
     // Phase 2 collections — generic, parameterized by `action.collection`.
     case "COLLECTION_ADD":
@@ -137,44 +188,42 @@ function reducer(state, action) {
     case "COLLECTION_BULK_DELETE":
       return { ...state, [action.collection]: state[action.collection].filter(notInSet(action.ids)) };
 
-    // A Comparison Group is a pure tagging layer — deleting it (or bulk-
-    // deleting several) only ever removes the group row itself and its
+    // A Competitive Set is a pure tagging layer — deleting it (or bulk-
+    // deleting several) only ever removes the comp set row itself and its
     // membership references. Competitors, and everything owned by a
     // competitor (mappings/sources/URLs), are completely untouched.
-    case "DELETE_COMPARISON_GROUP_CASCADE":
+    case "DELETE_COMP_SET_CASCADE":
       return {
         ...state,
-        comparisonGroups: state.comparisonGroups.filter((g) => g.id !== action.payload),
-        groupMemberships: state.groupMemberships.filter((m) => m.groupId !== action.payload),
+        compSets: state.compSets.filter((g) => g.id !== action.payload),
+        compSetMemberships: state.compSetMemberships.filter((m) => m.compSetId !== action.payload),
       };
-    case "BULK_DELETE_COMPARISON_GROUPS_CASCADE":
+    case "BULK_DELETE_COMP_SETS_CASCADE":
       return {
         ...state,
-        comparisonGroups: state.comparisonGroups.filter(notInSet(action.ids)),
-        groupMemberships: state.groupMemberships.filter((m) => !action.ids.includes(m.groupId)),
+        compSets: state.compSets.filter(notInSet(action.ids)),
+        compSetMemberships: state.compSetMemberships.filter((m) => !action.ids.includes(m.compSetId)),
       };
     // A Competitor owns its own Mapping/Source/URL records and its own
-    // group-membership rows — deleting it permanently cascades to all four,
-    // but never touches the Comparison Group rows themselves.
+    // comp-set-membership rows — deleting it permanently cascades to all four,
+    // but never touches the Competitive Set rows themselves.
     case "DELETE_COMPETITOR_CASCADE":
       return {
         ...state,
         competitors: state.competitors.filter((c) => c.id !== action.payload),
-        groupMemberships: state.groupMemberships.filter((m) => m.competitorId !== action.payload),
+        compSetMemberships: state.compSetMemberships.filter((m) => m.competitorId !== action.payload),
         roomMappings: state.roomMappings.filter((m) => m.competitorId !== action.payload),
         ratePlanMappings: state.ratePlanMappings.filter((m) => m.competitorId !== action.payload),
         sourceConfigs: state.sourceConfigs.filter((s) => s.competitorId !== action.payload),
-        urlRecords: state.urlRecords.filter((u) => u.competitorId !== action.payload),
       };
     case "BULK_DELETE_COMPETITORS_CASCADE":
       return {
         ...state,
         competitors: state.competitors.filter(notInSet(action.ids)),
-        groupMemberships: state.groupMemberships.filter((m) => !action.ids.includes(m.competitorId)),
+        compSetMemberships: state.compSetMemberships.filter((m) => !action.ids.includes(m.competitorId)),
         roomMappings: state.roomMappings.filter((m) => !action.ids.includes(m.competitorId)),
         ratePlanMappings: state.ratePlanMappings.filter((m) => !action.ids.includes(m.competitorId)),
         sourceConfigs: state.sourceConfigs.filter((s) => !action.ids.includes(s.competitorId)),
-        urlRecords: state.urlRecords.filter((u) => !action.ids.includes(u.competitorId)),
       };
 
     // A Rate Plan Mapping's optional `roomMappingId` is a soft FK to a Room
@@ -252,44 +301,62 @@ export function DataProvider({ children }) {
 
   const scopedRoomIds = useMemo(() => new Set(scopedRooms.map((r) => r.id)), [scopedRooms]);
 
+  // Rate Plan Rooms scope transitively through Rooms (their `roomId`), and
+  // Rate Plans in turn scope transitively through Rate Plan Rooms — a Rate
+  // Plan is now visible only if it has at least one Room this user can see,
+  // exactly the way Phase 2's mappings/sources/URLs scope transitively
+  // through Competitors.
+  const scopedRatePlanRooms = useMemo(
+    () => (permissions.canViewAllProperties ? state.ratePlanRooms : state.ratePlanRooms.filter((rp) => scopedRoomIds.has(rp.roomId))),
+    [state.ratePlanRooms, permissions.canViewAllProperties, scopedRoomIds]
+  );
+  const scopedRatePlanIdsFromRatePlanRooms = useMemo(() => new Set(scopedRatePlanRooms.map((rp) => rp.ratePlanId)), [scopedRatePlanRooms]);
   const scopedRatePlans = useMemo(
-    () => (permissions.canViewAllProperties ? state.ratePlans : state.ratePlans.filter((rp) => scopedRoomIds.has(rp.roomId))),
-    [state.ratePlans, permissions.canViewAllProperties, scopedRoomIds]
+    () => (permissions.canViewAllProperties ? state.ratePlans : state.ratePlans.filter((rp) => scopedRatePlanIdsFromRatePlanRooms.has(rp.id))),
+    [state.ratePlans, permissions.canViewAllProperties, scopedRatePlanIdsFromRatePlanRooms]
+  );
+
+  // Pricing Ranges scope transitively through Rate Plan Rooms.
+  const scopedRatePlanRoomIds = useMemo(() => new Set(scopedRatePlanRooms.map((rp) => rp.id)), [scopedRatePlanRooms]);
+  const scopedPricingRanges = useMemo(
+    () => (permissions.canViewAllProperties ? state.pricingRanges : state.pricingRanges.filter((pr) => scopedRatePlanRoomIds.has(pr.ratePlanRoomId))),
+    [state.pricingRanges, permissions.canViewAllProperties, scopedRatePlanRoomIds]
   );
 
   const roomCountFor = useCallback((propertyId) => state.rooms.filter((r) => r.propertyId === propertyId).length, [state.rooms]);
   const ratePlanCountFor = useCallback(
     (propertyId) => {
       const roomIds = new Set(state.rooms.filter((r) => r.propertyId === propertyId).map((r) => r.id));
-      return state.ratePlans.filter((rp) => roomIds.has(rp.roomId)).length;
+      const ratePlanIds = new Set(state.ratePlanRooms.filter((rp) => roomIds.has(rp.roomId)).map((rp) => rp.ratePlanId));
+      return ratePlanIds.size;
     },
-    [state.rooms, state.ratePlans]
+    [state.rooms, state.ratePlanRooms]
   );
 
   // Phase 2 scoping mirrors Phase 1 exactly: Competitors are scoped by
   // propertyId the same way Rooms are (they're the primary collection now,
-  // not nested under a group); everything a competitor owns (Mappings/
-  // Sources/URLs/group memberships) is then scoped transitively by
+  // not nested under a comp set); everything a competitor owns (Mappings/
+  // Sources/URLs/comp set memberships) is then scoped transitively by
   // competitorId, so an out-of-scope property can never leak its competitor
-  // configuration to a user who can't see the property itself. Comparison
-  // Groups are scoped by their own propertyId — independently of which
+  // configuration to a user who can't see the property itself. Competitive
+  // Sets are scoped by their own propertyId — independently of which
   // competitors happen to reference them.
-  const scopedComparisonGroups = useMemo(
-    () => (permissions.canViewAllProperties ? state.comparisonGroups : state.comparisonGroups.filter((g) => scopedPropertyIds.has(g.propertyId))),
-    [state.comparisonGroups, permissions.canViewAllProperties, scopedPropertyIds]
+  const scopedCompSets = useMemo(
+    () => (permissions.canViewAllProperties ? state.compSets : state.compSets.filter((g) => scopedPropertyIds.has(g.propertyId))),
+    [state.compSets, permissions.canViewAllProperties, scopedPropertyIds]
   );
-  const scopedGroupIds = useMemo(() => new Set(scopedComparisonGroups.map((g) => g.id)), [scopedComparisonGroups]);
+  const scopedCompSetIds = useMemo(() => new Set(scopedCompSets.map((g) => g.id)), [scopedCompSets]);
   const scopedCompetitors = useMemo(
     () => (permissions.canViewAllProperties ? state.competitors : state.competitors.filter((c) => scopedPropertyIds.has(c.propertyId))),
     [state.competitors, permissions.canViewAllProperties, scopedPropertyIds]
   );
   const scopedCompetitorIds = useMemo(() => new Set(scopedCompetitors.map((c) => c.id)), [scopedCompetitors]);
-  const scopedGroupMemberships = useMemo(
+  const scopedCompSetMemberships = useMemo(
     () =>
       permissions.canViewAllProperties
-        ? state.groupMemberships
-        : state.groupMemberships.filter((m) => scopedGroupIds.has(m.groupId) && scopedCompetitorIds.has(m.competitorId)),
-    [state.groupMemberships, permissions.canViewAllProperties, scopedGroupIds, scopedCompetitorIds]
+        ? state.compSetMemberships
+        : state.compSetMemberships.filter((m) => scopedCompSetIds.has(m.compSetId) && scopedCompetitorIds.has(m.competitorId)),
+    [state.compSetMemberships, permissions.canViewAllProperties, scopedCompSetIds, scopedCompetitorIds]
   );
   const scopedRoomMappings = useMemo(
     () => (permissions.canViewAllProperties ? state.roomMappings : state.roomMappings.filter((m) => scopedCompetitorIds.has(m.competitorId))),
@@ -303,11 +370,6 @@ export function DataProvider({ children }) {
     () => (permissions.canViewAllProperties ? state.sourceConfigs : state.sourceConfigs.filter((s) => scopedCompetitorIds.has(s.competitorId))),
     [state.sourceConfigs, permissions.canViewAllProperties, scopedCompetitorIds]
   );
-  const scopedUrlRecords = useMemo(
-    () => (permissions.canViewAllProperties ? state.urlRecords : state.urlRecords.filter((u) => scopedCompetitorIds.has(u.competitorId))),
-    [state.urlRecords, permissions.canViewAllProperties, scopedCompetitorIds]
-  );
-
   // Generic full-lifecycle CRUD factory for a Phase 2 collection — the same
   // add/update/archive/restore/delete/duplicate/bulk-* surface Rooms/Rate
   // Plans expose, generated once per collection instead of hand-written per
@@ -347,12 +409,11 @@ export function DataProvider({ children }) {
     };
   }
 
-  const comparisonGroupApi = makeCollectionApi("comparisonGroups", "CGRP", 5000, "name");
+  const compSetApi = makeCollectionApi("compSets", "CSET", 5000, "name");
   const competitorApi = makeCollectionApi("competitors", "CMP", 6000, "hotelName");
   const roomMappingApi = makeCollectionApi("roomMappings", "RMAP", 7000, "competitorRoomLabel");
   const ratePlanMappingApi = makeCollectionApi("ratePlanMappings", "RPMAP", 8000, "competitorRatePlanName");
   const sourceConfigApi = makeCollectionApi("sourceConfigs", "SRC", 9000, "sourceName");
-  const urlRecordApi = makeCollectionApi("urlRecords", "URL", 10000, "label");
 
   const api = useMemo(
     () => ({
@@ -360,100 +421,101 @@ export function DataProvider({ children }) {
       properties: scopedProperties,
       rooms: scopedRooms,
       ratePlans: scopedRatePlans,
-      comparisonGroups: scopedComparisonGroups,
+      ratePlanRooms: scopedRatePlanRooms,
+      pricingRanges: scopedPricingRanges,
+      compSets: scopedCompSets,
       competitors: scopedCompetitors,
-      groupMemberships: scopedGroupMemberships,
+      compSetMemberships: scopedCompSetMemberships,
       roomMappings: scopedRoomMappings,
       ratePlanMappings: scopedRatePlanMappings,
       sourceConfigs: scopedSourceConfigs,
-      urlRecords: scopedUrlRecords,
       roomCountFor,
       ratePlanCountFor,
 
-      // Comparison Groups — a pure, optional organizational layer. They
+      // Competitive Sets — a pure, optional organizational layer. They
       // never own a Competitor; duplicating or deleting one only ever
-      // touches the group row and its `groupMemberships` reference rows.
-      addComparisonGroup: comparisonGroupApi.add,
-      updateComparisonGroup: comparisonGroupApi.update,
-      archiveComparisonGroup: comparisonGroupApi.archive,
-      restoreComparisonGroup: comparisonGroupApi.restore,
-      duplicateComparisonGroup: (group) => {
-        const copy = comparisonGroupApi.duplicate(group);
+      // touches the comp set row and its `compSetMemberships` reference rows.
+      addCompSet: compSetApi.add,
+      updateCompSet: compSetApi.update,
+      archiveCompSet: compSetApi.archive,
+      restoreCompSet: compSetApi.restore,
+      duplicateCompSet: (compSet) => {
+        const copy = compSetApi.duplicate(compSet);
         // The duplicate keeps the same member competitors (new membership
         // rows pointing at the same competitor ids) — competitors are never
-        // cloned, since a group is just a reference collection, not an
+        // cloned, since a comp set is just a reference collection, not an
         // owner.
-        const sourceMemberships = state.groupMemberships.filter((m) => m.groupId === group.id);
+        const sourceMemberships = state.compSetMemberships.filter((m) => m.compSetId === compSet.id);
         if (sourceMemberships.length) {
-          let cursor = state.groupMemberships;
+          let cursor = state.compSetMemberships;
           const cloned = sourceMemberships.map((m) => {
-            const clone = { id: nextId(cursor, "CGM", 11000), groupId: copy.id, competitorId: m.competitorId };
+            const clone = { id: nextId(cursor, "CSM", 11000), compSetId: copy.id, competitorId: m.competitorId };
             cursor = [clone, ...cursor];
             return clone;
           });
-          dispatch({ type: "COLLECTION_BULK_ADD", collection: "groupMemberships", payload: cloned });
+          dispatch({ type: "COLLECTION_BULK_ADD", collection: "compSetMemberships", payload: cloned });
         }
         return copy;
       },
-      // Deleting a group permanently only cascades to its membership
+      // Deleting a comp set permanently only cascades to its membership
       // references — competitors and their configuration are untouched.
-      deleteComparisonGroupPermanently: (id) => dispatch({ type: "DELETE_COMPARISON_GROUP_CASCADE", payload: id }),
-      bulkArchiveComparisonGroups: comparisonGroupApi.bulkArchive,
-      bulkRestoreComparisonGroups: comparisonGroupApi.bulkRestore,
-      bulkChangeStatusComparisonGroups: comparisonGroupApi.bulkChangeStatus,
-      bulkDuplicateComparisonGroups: comparisonGroupApi.bulkDuplicate,
-      bulkDeleteComparisonGroups: (ids) => dispatch({ type: "BULK_DELETE_COMPARISON_GROUPS_CASCADE", ids }),
+      deleteCompSetPermanently: (id) => dispatch({ type: "DELETE_COMP_SET_CASCADE", payload: id }),
+      bulkArchiveCompSets: compSetApi.bulkArchive,
+      bulkRestoreCompSets: compSetApi.bulkRestore,
+      bulkChangeStatusCompSets: compSetApi.bulkChangeStatus,
+      bulkDuplicateCompSets: compSetApi.bulkDuplicate,
+      bulkDeleteCompSets: (ids) => dispatch({ type: "BULK_DELETE_COMP_SETS_CASCADE", ids }),
 
-      // Group membership (many-to-many bridge) — the only place a Competitor
-      // and a Comparison Group are ever linked. Adding/removing a membership
-      // never touches the competitor record or the group record.
-      addGroupMembership: (groupId, competitorId) => {
-        const exists = state.groupMemberships.some((m) => m.groupId === groupId && m.competitorId === competitorId);
+      // Comp set membership (many-to-many bridge) — the only place a Competitor
+      // and a Competitive Set are ever linked. Adding/removing a membership
+      // never touches the competitor record or the comp set record.
+      addCompSetMembership: (compSetId, competitorId) => {
+        const exists = state.compSetMemberships.some((m) => m.compSetId === compSetId && m.competitorId === competitorId);
         if (exists) return null;
-        const membership = { id: nextId(state.groupMemberships, "CGM", 11000), groupId, competitorId };
-        dispatch({ type: "COLLECTION_ADD", collection: "groupMemberships", payload: membership });
+        const membership = { id: nextId(state.compSetMemberships, "CSM", 11000), compSetId, competitorId };
+        dispatch({ type: "COLLECTION_ADD", collection: "compSetMemberships", payload: membership });
         return membership;
       },
-      removeGroupMembership: (groupId, competitorId) => {
-        const existing = state.groupMemberships.find((m) => m.groupId === groupId && m.competitorId === competitorId);
-        if (existing) dispatch({ type: "COLLECTION_DELETE", collection: "groupMemberships", payload: existing.id });
+      removeCompSetMembership: (compSetId, competitorId) => {
+        const existing = state.compSetMemberships.find((m) => m.compSetId === compSetId && m.competitorId === competitorId);
+        if (existing) dispatch({ type: "COLLECTION_DELETE", collection: "compSetMemberships", payload: existing.id });
       },
-      // Bulk-assign several competitors to several groups in one dispatch —
-      // used by the Competitors list's "Assign to Group(s)" bulk action.
+      // Bulk-assign several competitors to several comp sets in one dispatch —
+      // used by the Competitors list's "Assign to Comp Set(s)" bulk action.
       // Skips pairs that are already members instead of creating duplicates.
-      bulkAssignCompetitorsToGroups: (competitorIds, groupIds) => {
-        const existingPairs = new Set(state.groupMemberships.map((m) => `${m.groupId}::${m.competitorId}`));
-        let cursor = state.groupMemberships;
+      bulkAssignCompetitorsToCompSets: (competitorIds, compSetIds) => {
+        const existingPairs = new Set(state.compSetMemberships.map((m) => `${m.compSetId}::${m.competitorId}`));
+        let cursor = state.compSetMemberships;
         const created = [];
-        for (const groupId of groupIds) {
+        for (const compSetId of compSetIds) {
           for (const competitorId of competitorIds) {
-            const key = `${groupId}::${competitorId}`;
+            const key = `${compSetId}::${competitorId}`;
             if (existingPairs.has(key)) continue;
-            const membership = { id: nextId(cursor, "CGM", 11000), groupId, competitorId };
+            const membership = { id: nextId(cursor, "CSM", 11000), compSetId, competitorId };
             cursor = [membership, ...cursor];
             created.push(membership);
             existingPairs.add(key);
           }
         }
-        if (created.length) dispatch({ type: "COLLECTION_BULK_ADD", collection: "groupMemberships", payload: created });
+        if (created.length) dispatch({ type: "COLLECTION_BULK_ADD", collection: "compSetMemberships", payload: created });
         return created;
       },
-      bulkRemoveCompetitorsFromGroup: (competitorIds, groupId) => {
-        const idsToRemove = state.groupMemberships
-          .filter((m) => m.groupId === groupId && competitorIds.includes(m.competitorId))
+      bulkRemoveCompetitorsFromCompSet: (competitorIds, compSetId) => {
+        const idsToRemove = state.compSetMemberships
+          .filter((m) => m.compSetId === compSetId && competitorIds.includes(m.competitorId))
           .map((m) => m.id);
-        if (idsToRemove.length) dispatch({ type: "COLLECTION_BULK_DELETE", collection: "groupMemberships", ids: idsToRemove });
+        if (idsToRemove.length) dispatch({ type: "COLLECTION_BULK_DELETE", collection: "compSetMemberships", ids: idsToRemove });
       },
 
       // Competitors — the primary collection, owned directly by a Property.
-      // Fully functional with zero group memberships.
+      // Fully functional with zero comp set memberships.
       addCompetitor: competitorApi.add,
       updateCompetitor: competitorApi.update,
       archiveCompetitor: competitorApi.archive,
       restoreCompetitor: competitorApi.restore,
       duplicateCompetitor: competitorApi.duplicate,
       // Deleting a competitor permanently cascades to its own mappings/
-      // sources/URLs and its group-membership rows — never to the groups
+      // sources/URLs and its comp-set-membership rows — never to the comp sets
       // themselves, which may still have other members.
       deleteCompetitorPermanently: (id) => dispatch({ type: "DELETE_COMPETITOR_CASCADE", payload: id }),
       bulkArchiveCompetitors: competitorApi.bulkArchive,
@@ -495,14 +557,6 @@ export function DataProvider({ children }) {
       bulkRestoreSourceConfigs: sourceConfigApi.bulkRestore,
       bulkChangeStatusSourceConfigs: sourceConfigApi.bulkChangeStatus,
       bulkDeleteSourceConfigs: sourceConfigApi.bulkDelete,
-
-      // URL Manager
-      addUrlRecord: urlRecordApi.add,
-      updateUrlRecord: urlRecordApi.update,
-      archiveUrlRecord: urlRecordApi.archive,
-      restoreUrlRecord: urlRecordApi.restore,
-      deleteUrlRecordPermanently: urlRecordApi.deletePermanently,
-      bulkDeleteUrlRecords: urlRecordApi.bulkDelete,
 
       // Properties
       addProperty: (data) => {
@@ -614,6 +668,120 @@ export function DataProvider({ children }) {
       },
       bulkDeleteRatePlans: (ids) => dispatch({ type: "BULK_DELETE_RATE_PLANS", ids }),
 
+      // Rate Plan Rooms — the room-specific layer beneath a Rate Plan. A
+      // single Rate Plan can own multiple Rate Plan Rooms (one per Room it
+      // applies to). `roomsForRatePlan(ratePlanId)` mirrors the scoping
+      // convention used elsewhere in this file — the canonical way a
+      // profile page/form fetches only the rows that belong to the record
+      // it's editing, each enriched with its own `pricingRanges` array.
+      roomsForRatePlan: (ratePlanId) =>
+        state.ratePlanRooms
+          .filter((rp) => rp.ratePlanId === ratePlanId)
+          .map((rp) => ({ ...rp, pricingRanges: state.pricingRanges.filter((pr) => pr.ratePlanRoomId === rp.id) })),
+      addRatePlanRoom: (data) => {
+        const ratePlanRoom = stamp({ ...data, id: nextId(state.ratePlanRooms, "RPR", 13000) });
+        dispatch({ type: "COLLECTION_ADD", collection: "ratePlanRooms", payload: ratePlanRoom });
+        return ratePlanRoom;
+      },
+      updateRatePlanRoom: (ratePlanRoom) => dispatch({ type: "COLLECTION_UPDATE", collection: "ratePlanRooms", payload: stamp(ratePlanRoom) }),
+      deleteRatePlanRoom: (id) => dispatch({ type: "DELETE_RATE_PLAN_ROOM_CASCADE", payload: id }),
+      bulkAddRatePlanRooms: (dataArray) => {
+        let cursor = state.ratePlanRooms;
+        const created = dataArray.map((d) => {
+          const ratePlanRoom = stamp({ ...d, id: nextId(cursor, "RPR", 13000) });
+          cursor = [ratePlanRoom, ...cursor];
+          return ratePlanRoom;
+        });
+        dispatch({ type: "COLLECTION_BULK_ADD", collection: "ratePlanRooms", payload: created });
+        return created;
+      },
+      bulkDeleteRatePlanRooms: (ids) => dispatch({ type: "BULK_DELETE_RATE_PLAN_ROOMS_CASCADE", ids }),
+
+      // Pricing Ranges — a child collection of Rate Plan Rooms.
+      // `pricingRangesForRatePlanRoom(ratePlanRoomId)` mirrors the scoping convention
+      // used elsewhere in this file (e.g. filtering scopedRoomMappings by
+      // competitorId) — the canonical way a profile page/form fetches only
+      // the rows that belong to the record it's editing.
+      pricingRangesForRatePlanRoom: (ratePlanRoomId) => state.pricingRanges.filter((pr) => pr.ratePlanRoomId === ratePlanRoomId),
+      addPricingRange: (data) => {
+        const range = stamp({ ...data, id: nextId(state.pricingRanges, "PR", 4000) });
+        dispatch({ type: "COLLECTION_ADD", collection: "pricingRanges", payload: range });
+        return range;
+      },
+      updatePricingRange: (range) => dispatch({ type: "COLLECTION_UPDATE", collection: "pricingRanges", payload: stamp(range) }),
+      deletePricingRange: (id) => dispatch({ type: "COLLECTION_DELETE", collection: "pricingRanges", payload: id }),
+      bulkAddPricingRanges: (dataArray) => {
+        let cursor = state.pricingRanges;
+        const created = dataArray.map((d) => {
+          const range = stamp({ ...d, id: nextId(cursor, "PR", 4000) });
+          cursor = [range, ...cursor];
+          return range;
+        });
+        dispatch({ type: "COLLECTION_BULK_ADD", collection: "pricingRanges", payload: created });
+        return created;
+      },
+      bulkDeletePricingRanges: (ids) => dispatch({ type: "COLLECTION_BULK_DELETE", collection: "pricingRanges", ids }),
+
+      // Centralized reconciliation for the Rate Plan form's in-memory Rooms
+      // draft. `ratePlanRoomsDraft` is shaped
+      // `[{ id, isNew, roomId, pricingRanges: [{ id, isNew, ...rangeFields }] }]`
+      // — exactly what RatePlanForm's Rooms tab produces. This is the ONLY
+      // place this reconciliation logic lives; page components must call
+      // this rather than re-implementing add/update/delete branching.
+      saveRatePlanRooms: (ratePlanId, ratePlanRoomsDraft) => {
+        const persistedRatePlanRooms = state.ratePlanRooms.filter((rp) => rp.ratePlanId === ratePlanId);
+        const persistedIds = new Set(persistedRatePlanRooms.map((rp) => rp.id));
+        const draftPersistedIds = new Set(ratePlanRoomsDraft.filter((d) => !d.isNew).map((d) => d.id));
+
+        // (c) Any persisted Rate Plan Room no longer present in the draft at
+        // all gets deleted, cascading its Pricing Ranges too.
+        const removedIds = persistedRatePlanRooms.filter((rp) => !draftPersistedIds.has(rp.id)).map((rp) => rp.id);
+        if (removedIds.length === 1) dispatch({ type: "DELETE_RATE_PLAN_ROOM_CASCADE", payload: removedIds[0] });
+        else if (removedIds.length > 1) dispatch({ type: "BULK_DELETE_RATE_PLAN_ROOMS_CASCADE", ids: removedIds });
+
+        let ratePlanRoomCursor = state.ratePlanRooms;
+        let pricingRangeCursor = state.pricingRanges;
+
+        ratePlanRoomsDraft.forEach((draft) => {
+          if (draft.isNew || !persistedIds.has(draft.id)) {
+            // (a) Brand-new Rate Plan Room — create it, then create all of
+            // its Pricing Range rows (all new, since the parent is new too).
+            const ratePlanRoom = stamp({ ratePlanId, roomId: draft.roomId, id: nextId(ratePlanRoomCursor, "RPR", 13000) });
+            ratePlanRoomCursor = [ratePlanRoom, ...ratePlanRoomCursor];
+            dispatch({ type: "COLLECTION_ADD", collection: "ratePlanRooms", payload: ratePlanRoom });
+            (draft.pricingRanges || []).forEach((row) => {
+              const { id, isNew, ...rest } = row;
+              const range = stamp({ ...rest, ratePlanRoomId: ratePlanRoom.id, id: nextId(pricingRangeCursor, "PR", 4000) });
+              pricingRangeCursor = [range, ...pricingRangeCursor];
+              dispatch({ type: "COLLECTION_ADD", collection: "pricingRanges", payload: range });
+            });
+          } else {
+            // (b) Existing Rate Plan Room — update its roomId if changed,
+            // then reconcile its Pricing Ranges the same add/update/delete
+            // way the per-room Pricing Ranges editor's handleSave already did.
+            const existing = persistedRatePlanRooms.find((rp) => rp.id === draft.id);
+            if (existing && existing.roomId !== draft.roomId) {
+              dispatch({ type: "COLLECTION_UPDATE", collection: "ratePlanRooms", payload: stamp({ ...existing, roomId: draft.roomId }) });
+            }
+            const persistedRanges = state.pricingRanges.filter((pr) => pr.ratePlanRoomId === draft.id);
+            const draftRangeIds = new Set((draft.pricingRanges || []).filter((r) => !r.isNew).map((r) => r.id));
+            const rangesToDelete = persistedRanges.filter((pr) => !draftRangeIds.has(pr.id)).map((pr) => pr.id);
+            if (rangesToDelete.length) dispatch({ type: "COLLECTION_BULK_DELETE", collection: "pricingRanges", ids: rangesToDelete });
+
+            (draft.pricingRanges || []).forEach((row) => {
+              const { id, isNew, ...rest } = row;
+              if (isNew || !persistedRanges.some((pr) => pr.id === id)) {
+                const range = stamp({ ...rest, ratePlanRoomId: draft.id, id: nextId(pricingRangeCursor, "PR", 4000) });
+                pricingRangeCursor = [range, ...pricingRangeCursor];
+                dispatch({ type: "COLLECTION_ADD", collection: "pricingRanges", payload: range });
+              } else {
+                dispatch({ type: "COLLECTION_UPDATE", collection: "pricingRanges", payload: stamp({ id, ...rest, ratePlanRoomId: draft.id }) });
+              }
+            });
+          }
+        });
+      },
+
       // Master data (Room Types / Amenities / Room Templates). `kind` is the
       // master table key (mirrors the future MVC route/table name).
       addMasterItem: (kind, data) => {
@@ -625,8 +793,8 @@ export function DataProvider({ children }) {
       deleteMasterItem: (kind, id) => dispatch({ type: "DELETE_MASTER_ITEM", kind, id }),
     }),
     [
-      state, scopedProperties, scopedRooms, scopedRatePlans,
-      scopedComparisonGroups, scopedCompetitors, scopedGroupMemberships, scopedRoomMappings, scopedRatePlanMappings, scopedSourceConfigs, scopedUrlRecords,
+      state, scopedProperties, scopedRooms, scopedRatePlans, scopedRatePlanRooms, scopedPricingRanges,
+      scopedCompSets, scopedCompetitors, scopedCompSetMemberships, scopedRoomMappings, scopedRatePlanMappings, scopedSourceConfigs,
       roomCountFor, ratePlanCountFor, stamp, permissions, user,
     ]
   );

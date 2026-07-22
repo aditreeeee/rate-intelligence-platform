@@ -17,18 +17,18 @@ import { computeCompetitorReadiness } from "../../lib/competitorReadiness.js";
 import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { usePermissions } from "../../hooks/usePermissions.js";
-import { ComparisonGroupForm } from "./ComparisonGroupForm.jsx";
+import { CompSetForm } from "./CompSetForm.jsx";
 
 function kpiRingVariant(pct) {
   return pct === 100 ? "success" : pct === 0 ? "danger" : "warning";
 }
 
-// Secondary, optional page — a Comparison Group's profile is just its
+// Secondary, optional page — a Competitive Set's profile is just its
 // details plus membership management. It never shows mapping/source/URL/
 // validation tabs: those all belong directly to a Competitor now (see
-// CompetitorProfilePage) and work identically whether or not this group
+// CompetitorProfilePage) and work identically whether or not this comp set
 // even exists.
-export function ComparisonGroupProfilePage() {
+export function CompSetProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const data = useData();
@@ -40,33 +40,33 @@ export function ComparisonGroupProfilePage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [picked, setPicked] = useState([]);
 
-  const group = data.comparisonGroups.find((g) => g.id === id);
-  const property = group ? data.properties.find((p) => p.id === group.propertyId) : null;
+  const compSet = data.compSets.find((g) => g.id === id);
+  const property = compSet ? data.properties.find((p) => p.id === compSet.propertyId) : null;
 
-  if (!group) {
+  if (!compSet) {
     return (
       <div>
-        <Breadcrumbs items={[{ label: "Comparison Groups", to: "/portal/comparison-groups" }, { label: "Not found" }]} />
-        <EmptyState icon={Target} title="Comparison group not found" message="It may have been deleted." action={<Button variant="secondary" onClick={() => navigate("/portal/comparison-groups")}>Back to Comparison Groups</Button>} />
+        <Breadcrumbs items={[{ label: "Competitive Sets", to: "/portal/comp-sets" }, { label: "Not found" }]} />
+        <EmptyState icon={Target} title="Competitive set not found" message="It may have been deleted." action={<Button variant="secondary" onClick={() => navigate("/portal/comp-sets")}>Back to Competitive Sets</Button>} />
       </div>
     );
   }
 
-  const memberGroupCompetitorIds = useMemo(
-    () => new Set(data.groupMemberships.filter((m) => m.groupId === group.id).map((m) => m.competitorId)),
-    [data.groupMemberships, group.id]
+  const memberCompSetCompetitorIds = useMemo(
+    () => new Set(data.compSetMemberships.filter((m) => m.compSetId === compSet.id).map((m) => m.competitorId)),
+    [data.compSetMemberships, compSet.id]
   );
   const memberCompetitors = useMemo(
-    () => data.competitors.filter((c) => memberGroupCompetitorIds.has(c.id)),
-    [data.competitors, memberGroupCompetitorIds]
+    () => data.competitors.filter((c) => memberCompSetCompetitorIds.has(c.id)),
+    [data.competitors, memberCompSetCompetitorIds]
   );
   const availableCompetitors = useMemo(
-    () => data.competitors.filter((c) => c.propertyId === group.propertyId && c.status !== "Archived" && !memberGroupCompetitorIds.has(c.id)),
-    [data.competitors, group.propertyId, memberGroupCompetitorIds]
+    () => data.competitors.filter((c) => c.propertyId === compSet.propertyId && c.status !== "Archived" && !memberCompSetCompetitorIds.has(c.id)),
+    [data.competitors, compSet.propertyId, memberCompSetCompetitorIds]
   );
 
-  // Group Manager statistics — derived from each member competitor's own
-  // mappings/sources, never stored on the group itself.
+  // Comp Set Manager statistics — derived from each member competitor's own
+  // mappings/sources, never stored on the comp set itself.
   const stats = useMemo(() => {
     const activeMembers = memberCompetitors.filter((c) => c.status !== "Archived");
     if (!activeMembers.length) return { mappingPct: 0, sourcePct: 0, readinessPct: 0 };
@@ -88,34 +88,34 @@ export function ComparisonGroupProfilePage() {
   }, [memberCompetitors, data.roomMappings, data.ratePlanMappings, data.sourceConfigs]);
 
   const handleSubmit = (form) => {
-    data.updateComparisonGroup({ ...group, ...form });
+    data.updateCompSet({ ...compSet, ...form });
     toast.success(`${form.name} updated.`);
     setFormOpen(false);
   };
 
   const handleDuplicate = () => {
-    const copy = data.duplicateComparisonGroup(group);
+    const copy = data.duplicateCompSet(compSet);
     toast.info(`Duplicated as ${copy.id}, keeping the same members.`);
-    navigate(`/portal/comparison-groups/${copy.id}`);
+    navigate(`/portal/comp-sets/${copy.id}`);
   };
 
-  const handleArchive = () => { data.archiveComparisonGroup(group); toast.info(`${group.name} archived. Its member competitors are unaffected.`); };
-  const handleRestore = () => { data.restoreComparisonGroup(group); toast.success(`${group.name} restored.`); };
+  const handleArchive = () => { data.archiveCompSet(compSet); toast.info(`${compSet.name} archived. Its member competitors are unaffected.`); };
+  const handleRestore = () => { data.restoreCompSet(compSet); toast.success(`${compSet.name} restored.`); };
   const handleDeletePermanently = () => {
-    data.deleteComparisonGroupPermanently(group.id);
-    toast.success(`${group.name} permanently deleted. Its member competitors were not affected.`);
-    navigate("/portal/comparison-groups");
+    data.deleteCompSetPermanently(compSet.id);
+    toast.success(`${compSet.name} permanently deleted. Its member competitors were not affected.`);
+    navigate("/portal/comp-sets");
   };
 
   const handleRemoveMember = (competitor) => {
-    data.removeGroupMembership(group.id, competitor.id);
-    toast.info(`${competitor.hotelName} removed from ${group.name}.`);
+    data.removeCompSetMembership(compSet.id, competitor.id);
+    toast.info(`${competitor.hotelName} removed from ${compSet.name}.`);
   };
 
   const togglePicked = (id) => setPicked((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   const handleAddMembers = () => {
-    data.bulkAssignCompetitorsToGroups(picked, [group.id]);
-    toast.success(`Added ${picked.length} competitor(s) to ${group.name}.`);
+    data.bulkAssignCompetitorsToCompSets(picked, [compSet.id]);
+    toast.success(`Added ${picked.length} competitor(s) to ${compSet.name}.`);
     setPicked([]);
     setPickerOpen(false);
   };
@@ -126,8 +126,8 @@ export function ComparisonGroupProfilePage() {
         items={[
           { label: "Properties", to: "/portal/properties" },
           ...(property ? [{ label: property.name, to: `/portal/properties/${property.id}` }] : []),
-          { label: "Comparison Groups", to: "/portal/comparison-groups" },
-          { label: group.name },
+          { label: "Competitive Sets", to: "/portal/comp-sets" },
+          { label: compSet.name },
         ]}
       />
 
@@ -135,20 +135,20 @@ export function ComparisonGroupProfilePage() {
         <div className="profile-header" style={{ marginBottom: 0 }}>
           <div className="property-thumb property-thumb--lg"><Target size={22} strokeWidth={2} /></div>
           <div className="profile-header__info">
-            <div className="profile-header__title">{group.name}</div>
+            <div className="profile-header__title">{compSet.name}</div>
             <div className="profile-header__subtitle">
-              <MapPin size={13} strokeWidth={2} /> {property?.name || "—"} &middot; {group.market || "No market set"}
-              <span style={{ marginLeft: 8 }}><StatusBadge status={group.status} /></span>
+              <MapPin size={13} strokeWidth={2} /> {property?.name || "—"} &middot; {compSet.market || "No market set"}
+              <span style={{ marginLeft: 8 }}><StatusBadge status={compSet.status} /></span>
             </div>
           </div>
           <div className="profile-header__actions">
             <Button variant="ghost" size="md" icon={Copy} onClick={handleDuplicate}>Duplicate</Button>
-            {group.status !== "Archived" ? (
+            {compSet.status !== "Archived" ? (
               <Button variant="ghost" size="md" icon={Archive} onClick={handleArchive}>Archive</Button>
             ) : (
               <>
                 <Button variant="ghost" size="md" icon={RotateCcw} onClick={handleRestore}>Restore</Button>
-                {permissions.canDeleteComparisonGroupPermanently && (
+                {permissions.canDeleteCompSetPermanently && (
                   <Button variant="danger" size="md" icon={Trash2} onClick={() => setConfirmDelete(true)}>Delete Permanently</Button>
                 )}
               </>
@@ -199,16 +199,16 @@ export function ComparisonGroupProfilePage() {
         <div className="overview-grid__col">
           <Card>
             <div className="config-summary__section-title">
-              <span className="config-summary__section-title-text">Group Details</span>
+              <span className="config-summary__section-title-text">Competitive Set Details</span>
             </div>
             <div className="detail-grid">
               <div className="detail-field"><span>Property</span><strong>{property?.name || "—"}</strong></div>
-              <div className="detail-field"><span>Market / Segment</span><strong>{group.market || "—"}</strong></div>
-              <div className="detail-field"><span>Status</span><strong><StatusBadge status={group.status} /></strong></div>
-              <div className="detail-field"><span>Last Modified</span><strong className="tabular">{formatDate(group.lastModifiedAt)}</strong></div>
+              <div className="detail-field"><span>Market / Segment</span><strong>{compSet.market || "—"}</strong></div>
+              <div className="detail-field"><span>Status</span><strong><StatusBadge status={compSet.status} /></strong></div>
+              <div className="detail-field"><span>Last Modified</span><strong className="tabular">{formatDate(compSet.lastModifiedAt)}</strong></div>
             </div>
             <div className="detail-field" style={{ marginTop: "var(--space-3)" }}>
-              <span>Tags</span><strong><TagChips tags={group.tags || []} /></strong>
+              <span>Tags</span><strong><TagChips tags={compSet.tags || []} /></strong>
             </div>
           </Card>
 
@@ -217,7 +217,7 @@ export function ComparisonGroupProfilePage() {
               <span className="config-summary__section-title-text">Notes</span>
             </div>
             <Textarea
-              placeholder="Add internal notes about this comparison group..."
+              placeholder="Add internal notes about this competitive set..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
@@ -237,15 +237,15 @@ export function ComparisonGroupProfilePage() {
               </button>
             </div>
             <p className="master-manager__hint" style={{ marginBottom: 16 }}>
-              This group only organizes references to competitors — it never owns their configuration. A competitor
-              can belong to any number of groups at once, and removing one here only removes that reference: the
+              This competitive set only organizes references to competitors — it never owns their configuration. A competitor
+              can belong to any number of competitive sets at once, and removing one here only removes that reference: the
               competitor, its room/rate plan mappings, sources, URLs, notes, and readiness all stay fully intact.
             </p>
             {memberCompetitors.length === 0 ? (
               <EmptyState
                 icon={Building2}
                 title="No members yet"
-                message="Add existing competitors from this property to this group."
+                message="Add existing competitors from this property to this competitive set."
                 action={<Button variant="secondary" size="sm" icon={Plus} onClick={() => setPickerOpen(true)} disabled={availableCompetitors.length === 0}>Add Members</Button>}
               />
             ) : (
@@ -267,16 +267,16 @@ export function ComparisonGroupProfilePage() {
         </div>
       </div>
 
-      <ComparisonGroupForm
+      <CompSetForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
-        initial={group}
+        initial={compSet}
         properties={property ? [property] : []}
-        scopePropertyId={group.propertyId}
+        scopePropertyId={compSet.propertyId}
       />
 
-      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Add Competitors to Group" size="sm"
+      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Add Competitors to Competitive Set" size="sm"
         footer={
           <>
             <button className="btn btn--ghost btn--md" type="button" onClick={() => setPickerOpen(false)}>Cancel</button>
@@ -285,7 +285,7 @@ export function ComparisonGroupProfilePage() {
         }
       >
         {availableCompetitors.length === 0 ? (
-          <EmptyState icon={Building2} title="No other competitors available" message="Every active competitor under this property already belongs to this group." />
+          <EmptyState icon={Building2} title="No other competitors available" message="Every active competitor under this property already belongs to this competitive set." />
         ) : (
           <div className="master-manager__list">
             {availableCompetitors.map((c) => {
@@ -305,8 +305,8 @@ export function ComparisonGroupProfilePage() {
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDeletePermanently}
-        title="Delete Comparison Group Permanently"
-        message={`"${group.name}" is archived. Permanently deleting it removes only the group and its membership references — member competitors and their configuration are completely unaffected. This action cannot be undone.`}
+        title="Delete Competitive Set Permanently"
+        message={`"${compSet.name}" is archived. Permanently deleting it removes only the competitive set and its membership references — member competitors and their configuration are completely unaffected. This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />

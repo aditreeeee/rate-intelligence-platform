@@ -15,7 +15,7 @@ import { Checkbox } from "../../components/ui/Checkbox.jsx";
 import { BulkActionBar } from "../../components/ui/BulkActionBar.jsx";
 import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
-import { ComparisonGroupFilterPanel } from "../../components/ui/ComparisonGroupFilterPanel.jsx";
+import { CompSetFilterPanel } from "../../components/ui/CompSetFilterPanel.jsx";
 import { useData } from "../../context/DataContext.jsx";
 import { usePropertyContext } from "../../context/PropertyContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -24,7 +24,7 @@ import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePersistedState } from "../../hooks/usePersistedState.js";
 import { usePaginatedSortedFiltered, formatDate } from "../../lib/format.js";
 import { computeCompetitorReadiness } from "../../lib/competitorReadiness.js";
-import { ComparisonGroupForm } from "./ComparisonGroupForm.jsx";
+import { CompSetForm } from "./CompSetForm.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -33,24 +33,24 @@ const VIEW_TABS = [
   { key: "archived", label: "Archived" },
 ];
 
-// Secondary, optional page — Comparison Groups are pure organizational
+// Secondary, optional page — Competitive Sets are pure organizational
 // collections here, reached only from the Competitors page's "Manage
-// Comparison Groups" toolbar button or its Comparison Group filter, never
-// the Phase 2 starting workflow. A group never owns a competitor: this page
-// only does group CRUD (create/rename/archive/duplicate/delete) plus a
-// member count column; membership itself is managed either from a group's
-// own profile page or the Competitors page's bulk "Assign to Group(s)."
-export function ComparisonGroupsPage() {
+// Competitive Sets" toolbar button or its Competitive Set filter, never
+// the Phase 2 starting workflow. A comp set never owns a competitor: this page
+// only does comp set CRUD (create/rename/archive/duplicate/delete) plus a
+// member count column; membership itself is managed either from a comp set's
+// own profile page or the Competitors page's bulk "Assign to Comp Set(s)."
+export function CompSetsPage() {
   const data = useData();
   const toast = useToast();
   const navigate = useNavigate();
   const permissions = usePermissions();
   const { selectedPropertyIds } = usePropertyContext();
   const [search, setSearch] = useState("");
-  const [tagFilter, setTagFilter] = usePersistedState("comparisonGroups.tagFilter", []);
+  const [tagFilter, setTagFilter] = usePersistedState("compSets.tagFilter", []);
   const [viewMode, setViewMode] = useState("active");
-  const [sortKey, setSortKey] = usePersistedState("comparisonGroups.sortKey", "name");
-  const [sortDir, setSortDir] = usePersistedState("comparisonGroups.sortDir", "asc");
+  const [sortKey, setSortKey] = usePersistedState("compSets.sortKey", "name");
+  const [sortDir, setSortDir] = usePersistedState("compSets.sortDir", "asc");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -64,30 +64,30 @@ export function ComparisonGroupsPage() {
   const selectedProperty = selectedProperties.length === 1 ? selectedProperties[0] : null;
   const propertyName = (id) => data.properties.find((p) => p.id === id)?.name || "—";
 
-  const groupsInScope = useMemo(
-    () => data.comparisonGroups.filter((g) => selectedPropertyIds.includes(g.propertyId)),
-    [data.comparisonGroups, selectedPropertyIds]
+  const compSetsInScope = useMemo(
+    () => data.compSets.filter((g) => selectedPropertyIds.includes(g.propertyId)),
+    [data.compSets, selectedPropertyIds]
   );
-  const groupsInView = useMemo(
+  const compSetsInView = useMemo(
     () =>
-      groupsInScope
+      compSetsInScope
         .filter((g) => (viewMode === "archived" ? g.status === "Archived" : g.status !== "Archived"))
         .filter((g) => tagFilter.length === 0 || tagFilter.some((t) => (g.tags || []).includes(t))),
-    [groupsInScope, viewMode, tagFilter]
+    [compSetsInScope, viewMode, tagFilter]
   );
 
-  const memberCountFor = (groupId) => data.groupMemberships.filter((m) => m.groupId === groupId).length;
+  const memberCountFor = (compSetId) => data.compSetMemberships.filter((m) => m.compSetId === compSetId).length;
 
-  // Group Manager statistics — each group is an intelligent organizational
+  // Comp Set Manager statistics — each comp set is an intelligent organizational
   // container, not a plain label: it surfaces mapping completeness, source
   // coverage, and readiness aggregated across its member competitors. None
-  // of this is stored on the group itself; it's re-derived from each
+  // of this is stored on the comp set itself; it's re-derived from each
   // member competitor's own mappings/sources every render, since those
-  // always belong to the competitor, never to the group.
-  const groupStatsById = useMemo(() => {
+  // always belong to the competitor, never to the comp set.
+  const compSetStatsById = useMemo(() => {
     const map = new Map();
-    for (const g of groupsInView) {
-      const competitorIds = data.groupMemberships.filter((m) => m.groupId === g.id).map((m) => m.competitorId);
+    for (const g of compSetsInView) {
+      const competitorIds = data.compSetMemberships.filter((m) => m.compSetId === g.id).map((m) => m.competitorId);
       const members = data.competitors.filter((c) => competitorIds.includes(c.id) && c.status !== "Archived");
       if (!members.length) {
         map.set(g.id, { count: 0, mappingPct: 0, sourcePct: 0, readinessPct: 0 });
@@ -111,7 +111,7 @@ export function ComparisonGroupsPage() {
       });
     }
     return map;
-  }, [groupsInView, data.groupMemberships, data.competitors, data.roomMappings, data.ratePlanMappings, data.sourceConfigs]);
+  }, [compSetsInView, data.compSetMemberships, data.competitors, data.roomMappings, data.ratePlanMappings, data.sourceConfigs]);
 
   const onSort = (key) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -129,7 +129,7 @@ export function ComparisonGroupsPage() {
   const { pageData, total } = useMemo(
     () =>
       usePaginatedSortedFiltered({
-        data: groupsInView,
+        data: compSetsInView,
         search,
         searchFields: ["id", "name", "market"],
         filters: {},
@@ -138,7 +138,7 @@ export function ComparisonGroupsPage() {
         page,
         pageSize: PAGE_SIZE,
       }),
-    [groupsInView, search, sortKey, sortDir, page]
+    [compSetsInView, search, sortKey, sortDir, page]
   );
 
   const visibleIds = pageData.map((g) => g.id);
@@ -146,8 +146,8 @@ export function ComparisonGroupsPage() {
 
   const columns = [
     { key: "select", label: <Checkbox checked={selection.allChecked} indeterminate={selection.someChecked} onChange={selection.toggleAll} label="Select all" />, width: 40 },
-    { key: "id", label: "Group ID", sortable: true, width: 96 },
-    { key: "name", label: "Comparison Group", sortable: true },
+    { key: "id", label: "Comp Set ID", sortable: true, width: 96 },
+    { key: "name", label: "Competitive Set", sortable: true },
     { key: "property", label: "Property", width: 130 },
     { key: "members", label: "Members", width: 84 },
     { key: "mapping", label: "Mapping", width: 92 },
@@ -159,7 +159,7 @@ export function ComparisonGroupsPage() {
     { key: "actions", label: "", width: 150 },
   ];
   // Same floor-plus-fixed-column-sum approach as CompetitorsPage — keeps
-  // "Comparison Group" the widest column on comfortable screens while
+  // "Competitive Set" the widest column on comfortable screens while
   // guaranteeing a horizontal scrollbar (never a squeezed, unreadable name
   // column) on narrower ones.
   const NAME_COLUMN_FLOOR = 220;
@@ -170,63 +170,63 @@ export function ComparisonGroupsPage() {
 
   const handleSubmit = (form) => {
     if (editing) {
-      data.updateComparisonGroup({ ...editing, ...form });
+      data.updateCompSet({ ...editing, ...form });
       toast.success(`${form.name} updated.`);
     } else {
-      const created = data.addComparisonGroup(form);
+      const created = data.addCompSet(form);
       toast.success(`${created.name} created as ${created.id}.`);
     }
     setFormOpen(false);
   };
 
-  const handleDuplicate = (g) => { const copy = data.duplicateComparisonGroup(g); toast.info(`Duplicated as ${copy.id}, keeping the same members.`); };
-  const handleArchive = (g) => { data.archiveComparisonGroup(g); toast.info(`${g.name} archived. Its member competitors are unaffected.`); };
-  const handleRestore = (g) => { data.restoreComparisonGroup(g); toast.success(`${g.name} restored.`); };
-  const handleDelete = () => { data.deleteComparisonGroupPermanently(confirmDelete.id); toast.success(`${confirmDelete.name} permanently deleted. Its member competitors were not affected.`); setConfirmDelete(null); };
+  const handleDuplicate = (g) => { const copy = data.duplicateCompSet(g); toast.info(`Duplicated as ${copy.id}, keeping the same members.`); };
+  const handleArchive = (g) => { data.archiveCompSet(g); toast.info(`${g.name} archived. Its member competitors are unaffected.`); };
+  const handleRestore = (g) => { data.restoreCompSet(g); toast.success(`${g.name} restored.`); };
+  const handleDelete = () => { data.deleteCompSetPermanently(confirmDelete.id); toast.success(`${confirmDelete.name} permanently deleted. Its member competitors were not affected.`); setConfirmDelete(null); };
 
-  const handleBulkArchive = () => { data.bulkArchiveComparisonGroups(selection.selected); toast.info(`${selection.count} group(s) archived.`); selection.clear(); };
-  const handleBulkRestore = () => { data.bulkRestoreComparisonGroups(selection.selected); toast.success(`${selection.count} group(s) restored.`); selection.clear(); };
-  const handleBulkDuplicate = () => { const copies = data.bulkDuplicateComparisonGroups(selection.selected); toast.info(`${copies.length} group(s) duplicated.`); selection.clear(); };
-  const handleBulkDelete = () => { data.bulkDeleteComparisonGroups(selection.selected); toast.success(`${selection.count} group(s) permanently deleted.`); selection.clear(); setConfirmBulkDelete(false); };
-  const handleBulkStatus = (status) => { data.bulkChangeStatusComparisonGroups(selection.selected, status); toast.info(`Status updated to ${status} for ${selection.count} group(s).`); selection.clear(); };
+  const handleBulkArchive = () => { data.bulkArchiveCompSets(selection.selected); toast.info(`${selection.count} comp set(s) archived.`); selection.clear(); };
+  const handleBulkRestore = () => { data.bulkRestoreCompSets(selection.selected); toast.success(`${selection.count} comp set(s) restored.`); selection.clear(); };
+  const handleBulkDuplicate = () => { const copies = data.bulkDuplicateCompSets(selection.selected); toast.info(`${copies.length} comp set(s) duplicated.`); selection.clear(); };
+  const handleBulkDelete = () => { data.bulkDeleteCompSets(selection.selected); toast.success(`${selection.count} comp set(s) permanently deleted.`); selection.clear(); setConfirmBulkDelete(false); };
+  const handleBulkStatus = (status) => { data.bulkChangeStatusCompSets(selection.selected, status); toast.info(`Status updated to ${status} for ${selection.count} comp set(s).`); selection.clear(); };
 
-  // Merge = move every member of the non-target selected groups into the
-  // target group, then archive the now-redundant source groups. Member
+  // Merge = move every member of the non-target selected comp sets into the
+  // target comp set, then archive the now-redundant source comp sets. Member
   // competitors and all of their configuration are never touched — only
-  // `groupMemberships` rows move, exactly like any other group action.
-  const selectedGroupsForMerge = groupsInScope.filter((g) => selection.selected.includes(g.id));
+  // `compSetMemberships` rows move, exactly like any other comp set action.
+  const selectedCompSetsForMerge = compSetsInScope.filter((g) => selection.selected.includes(g.id));
   const handleOpenMerge = () => { setMergeTargetId(selection.selected[0] || null); setMergeModalOpen(true); };
   const handleMerge = () => {
     const sourceIds = selection.selected.filter((id) => id !== mergeTargetId);
-    const competitorIds = [...new Set(data.groupMemberships.filter((m) => sourceIds.includes(m.groupId)).map((m) => m.competitorId))];
-    if (competitorIds.length) data.bulkAssignCompetitorsToGroups(competitorIds, [mergeTargetId]);
-    data.bulkArchiveComparisonGroups(sourceIds);
-    const targetName = groupsInScope.find((g) => g.id === mergeTargetId)?.name || "the target group";
-    toast.success(`Merged ${sourceIds.length} group(s) into ${targetName}.`);
+    const competitorIds = [...new Set(data.compSetMemberships.filter((m) => sourceIds.includes(m.compSetId)).map((m) => m.competitorId))];
+    if (competitorIds.length) data.bulkAssignCompetitorsToCompSets(competitorIds, [mergeTargetId]);
+    data.bulkArchiveCompSets(sourceIds);
+    const targetName = compSetsInScope.find((g) => g.id === mergeTargetId)?.name || "the target comp set";
+    toast.success(`Merged ${sourceIds.length} comp set(s) into ${targetName}.`);
     selection.clear();
     setMergeModalOpen(false);
     setMergeTargetId(null);
   };
 
   const archivedView = viewMode === "archived";
-  const groupCountForProperty = (propertyId) => data.comparisonGroups.filter((g) => g.propertyId === propertyId && g.status !== "Archived").length;
+  const compSetCountForProperty = (propertyId) => data.compSets.filter((g) => g.propertyId === propertyId && g.status !== "Archived").length;
 
   return (
     <div>
       <Breadcrumbs
         items={[
           { label: "Competitors", to: "/portal/competitors" },
-          { label: "Comparison Groups" },
+          { label: "Competitive Sets" },
         ]}
       />
       <Topbar
-        title="Comparison Groups"
-        subtitle="Optional organizational containers — competitors keep their own mappings and readiness regardless of group."
+        title="Competitive Sets"
+        subtitle="Optional organizational containers — competitors keep their own mappings and readiness regardless of comp set."
         hidePropertySelector
       />
 
       <div className="property-scoped-layout">
-        <ComparisonGroupFilterPanel getCount={groupCountForProperty} tagFilter={tagFilter} setTagFilter={setTagFilter} />
+        <CompSetFilterPanel getCount={compSetCountForProperty} tagFilter={tagFilter} setTagFilter={setTagFilter} />
 
         <div className="property-scoped-layout__content">
           <div className="page-section">
@@ -236,14 +236,14 @@ export function ComparisonGroupsPage() {
           <Card padded={false}>
             <div style={{ padding: "20px 20px 0" }}>
               <div className="page-toolbar">
-                <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search comparison groups..." disabled={!hasPropertySelection} />
+                <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search competitive sets..." disabled={!hasPropertySelection} />
                 {filtersActive && (
                   <button className="btn btn--ghost btn--sm" onClick={resetFilters}>
                     <RotateCcw size={13} strokeWidth={2} /> Reset
                   </button>
                 )}
                 <div className="page-toolbar__spacer" />
-                <Button variant="primary" size="md" icon={Plus} onClick={openCreate}>Add Comparison Group</Button>
+                <Button variant="primary" size="md" icon={Plus} onClick={openCreate}>Add Competitive Set</Button>
               </div>
             </div>
 
@@ -258,12 +258,12 @@ export function ComparisonGroupsPage() {
                 statusOptions={["Active", "Draft"]}
                 onChangeStatus={handleBulkStatus}
                 archived={archivedView}
-                canDelete={permissions.canDeleteComparisonGroupPermanently}
+                canDelete={permissions.canDeleteCompSetPermanently}
               />
               {selection.count >= 2 && !archivedView && (
                 <div className="page-toolbar" style={{ marginTop: -8, marginBottom: 16 }}>
                   <button className="btn btn--ghost btn--sm" type="button" onClick={handleOpenMerge}>
-                    <GitMerge size={13} strokeWidth={2} /> Merge into One Group
+                    <GitMerge size={13} strokeWidth={2} /> Merge into One Comp Set
                   </button>
                 </div>
               )}
@@ -278,33 +278,33 @@ export function ComparisonGroupsPage() {
                 minWidth={tableMinWidth}
                 emptyState={
                   !hasPropertySelection ? (
-                    <EmptyState icon={Building2} title="Select a property to get started" message="Select one or more properties from the panel on the left to view their comparison groups." />
+                    <EmptyState icon={Building2} title="Select a property to get started" message="Select one or more properties from the panel on the left to view their competitive sets." />
                   ) : (
                     <EmptyState
                       icon={Target}
-                      title={archivedView ? "No archived comparison groups" : filtersActive ? "No comparison groups match your filters" : "No comparison groups yet"}
+                      title={archivedView ? "No archived competitive sets" : filtersActive ? "No competitive sets match your filters" : "No competitive sets yet"}
                       message={
                         archivedView || filtersActive
                           ? "Try adjusting your search or filters."
-                          : "Groups are entirely optional organizational tools, not a required setup step — every competitor already works fully without one. Create a group only when you want to organize competitors by market segment, location, hotel category, or your own custom collection."
+                          : "Competitive sets are entirely optional organizational tools, not a required setup step — every competitor already works fully without one. Create a competitive set only when you want to organize competitors by market segment, location, hotel category, or your own custom collection."
                       }
                       action={
                         archivedView ? null : filtersActive ? (
                           <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
                         ) : (
-                          <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Comparison Group</Button>
+                          <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Competitive Set</Button>
                         )
                       }
                     />
                   )
                 }
                 renderRow={(g) => {
-                  const stats = groupStatsById.get(g.id) || { count: 0, mappingPct: 0, sourcePct: 0, readinessPct: 0 };
+                  const stats = compSetStatsById.get(g.id) || { count: 0, mappingPct: 0, sourcePct: 0, readinessPct: 0 };
                   return (
                   <tr key={g.id}>
                     <td><Checkbox checked={selection.selected.includes(g.id)} onChange={() => selection.toggle(g.id)} label={`Select ${g.name}`} /></td>
                     <td className="tabular table__cell-muted" style={{ whiteSpace: "nowrap" }}>{g.id}</td>
-                    <td className="row-link" onClick={() => navigate(`/portal/comparison-groups/${g.id}`)}>
+                    <td className="row-link" onClick={() => navigate(`/portal/comp-sets/${g.id}`)}>
                       <div className="table__cell-primary" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                       <div className="table__cell-muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.market || "—"}</div>
                     </td>
@@ -327,7 +327,7 @@ export function ComparisonGroupsPage() {
                         ) : (
                           <>
                             <button className="table__action-btn" title="Restore" onClick={() => handleRestore(g)}><RotateCcw size={15} strokeWidth={2} /></button>
-                            {permissions.canDeleteComparisonGroupPermanently && (
+                            {permissions.canDeleteCompSetPermanently && (
                               <button className="table__action-btn table__action-btn--danger" title="Delete Permanently" onClick={() => setConfirmDelete(g)}><Trash2 size={15} strokeWidth={2} /></button>
                             )}
                           </>
@@ -344,7 +344,7 @@ export function ComparisonGroupsPage() {
         </div>
       </div>
 
-      <ComparisonGroupForm
+      <CompSetForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
@@ -356,7 +356,7 @@ export function ComparisonGroupsPage() {
       <Modal
         open={mergeModalOpen}
         onClose={() => setMergeModalOpen(false)}
-        title="Merge Comparison Groups"
+        title="Merge Competitive Sets"
         size="sm"
         footer={
           <>
@@ -366,11 +366,11 @@ export function ComparisonGroupsPage() {
         }
       >
         <p className="master-manager__hint" style={{ marginBottom: 16 }}>
-          Every competitor in the other selected group(s) will be added to the group you keep — no competitor, mapping,
-          source, or URL is touched. The other group(s) are archived afterward, not deleted, so you can restore them later if needed.
+          Every competitor in the other selected comp set(s) will be added to the comp set you keep — no competitor, mapping,
+          source, or URL is touched. The other comp set(s) are archived afterward, not deleted, so you can restore them later if needed.
         </p>
         <div className="master-manager__list">
-          {selectedGroupsForMerge.map((g) => (
+          {selectedCompSetsForMerge.map((g) => (
             <div key={g.id} className="master-manager__row" style={{ cursor: "pointer" }} onClick={() => setMergeTargetId(g.id)}>
               <input type="radio" checked={mergeTargetId === g.id} onChange={() => setMergeTargetId(g.id)} name="merge-target" />
               <span className="master-manager__name">{g.name}</span>
@@ -385,8 +385,8 @@ export function ComparisonGroupsPage() {
         open={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDelete}
-        title="Delete Comparison Group Permanently"
-        message={`Permanently delete "${confirmDelete?.name}"? Its member competitors and all of their configuration (mappings, sources, URLs) are completely unaffected — only the group and its membership references are removed. This action cannot be undone.`}
+        title="Delete Competitive Set Permanently"
+        message={`Permanently delete "${confirmDelete?.name}"? Its member competitors and all of their configuration (mappings, sources, URLs) are completely unaffected — only the comp set and its membership references are removed. This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />
@@ -395,8 +395,8 @@ export function ComparisonGroupsPage() {
         open={confirmBulkDelete}
         onClose={() => setConfirmBulkDelete(false)}
         onConfirm={handleBulkDelete}
-        title="Delete Comparison Groups Permanently"
-        message={`Permanently delete ${selection.count} selected comparison group(s)? Their member competitors are completely unaffected. This action cannot be undone.`}
+        title="Delete Competitive Sets Permanently"
+        message={`Permanently delete ${selection.count} selected competitive set(s)? Their member competitors are completely unaffected. This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />

@@ -1,20 +1,21 @@
 // Phase 2 — Competitor Configuration Portal mock data.
 //
 // Hierarchy: Property -> Competitors (primary collection, owned directly by
-// the property) -> optional Comparison Groups (pure tagging/collections that
-// only *reference* competitors via GROUP_MEMBERSHIPS, a many-to-many bridge
+// the property) -> optional Competitive Sets (pure tagging/collections that
+// only *reference* competitors via COMP_SET_MEMBERSHIPS, a many-to-many bridge
 // table — exactly the shape a SQL Server join table would take, so no
 // redesign is needed when a real backend replaces this). Room/Rate Plan
 // Mapping, Source Configuration, and URL records all belong directly to a
-// competitor (`competitorId`) — never to a group. Deleting or archiving a
-// group only ever touches GROUP_MEMBERSHIPS rows, never a competitor or its
+// competitor (`competitorId`) — never to a comp set. Deleting or archiving a
+// comp set only ever touches COMP_SET_MEMBERSHIPS rows, never a competitor or its
 // configuration. Everything here is configuration, never live/historical
-// pricing. ID prefixes: CGRP- (Comparison Groups), CMP- (Competitors),
-// CGM- (Group Memberships), RMAP- (Room Mappings), RPMAP- (Rate Plan
-// Mappings), SRC- (Source Configs), URL- (URL records).
+// pricing. ID prefixes: CSET- (Competitive Sets), CMP- (Competitors),
+// CSM- (Comp Set Memberships), RMAP- (Room Mappings), RPMAP- (Rate Plan
+// Mappings), SRC- (Source Configs — also absorbs what used to be separate
+// URL records; see note above SOURCE_CONFIGS below).
 
-export const COMPARISON_GROUP_STATUSES = ["Draft", "Active", "Archived"];
-export const COMPARISON_GROUP_TAGS = ["Luxury", "Business", "Budget", "Resort", "Airport", "City Center", "Boutique"];
+export const COMP_SET_STATUSES = ["Draft", "Active", "Archived"];
+export const COMP_SET_TAGS = ["Luxury", "Business", "Budget", "Resort", "Airport", "City Center", "Boutique"];
 
 export const COMPETITOR_STATUSES = ["Active", "Draft", "Archived"];
 export const PRIORITY_LEVELS = ["High", "Medium", "Low"];
@@ -22,28 +23,25 @@ export const PRIORITY_LEVELS = ["High", "Medium", "Low"];
 export const MAPPING_TYPES = ["One-to-One", "One-to-Many", "Many-to-One"];
 export const MAPPING_STATUSES = ["Mapped", "Needs Review", "Unmapped"];
 
-export const URL_TYPES = ["Website", "OTA", "Custom"];
-export const URL_STATUSES = ["Active", "Draft", "Archived"];
-
-// Optional organizational collections — a group never owns a competitor, it
-// only groups references to them (see GROUP_MEMBERSHIPS below). Still scoped
+// Optional organizational collections — a comp set never owns a competitor, it
+// only groups references to them (see COMP_SET_MEMBERSHIPS below). Still scoped
 // to one property, same as before, since "market segment" groupings are a
 // property-level concept.
-export let COMPARISON_GROUPS = [
+export let COMP_SETS = [
   {
-    id: "CGRP-5000", propertyId: "PROP-1001", name: "Luxury Hotels – Miami",
+    id: "CSET-5000", propertyId: "PROP-1001", name: "Luxury Hotels – Miami",
     market: "Luxury", status: "Active", tags: ["Luxury", "Resort"],
     notes: "Primary competitive set tracked for Aurora Bay Resort's beachfront segment.",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-20T09:00:00Z",
   },
   {
-    id: "CGRP-5001", propertyId: "PROP-1002", name: "Business Downtown – Set A",
+    id: "CSET-5001", propertyId: "PROP-1002", name: "Business Downtown – Set A",
     market: "Business", status: "Active", tags: ["Business", "City Center"],
     notes: "",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-14T09:00:00Z",
   },
   {
-    id: "CGRP-5002", propertyId: "PROP-1001", name: "Weekend Getaway Rivals",
+    id: "CSET-5002", propertyId: "PROP-1001", name: "Weekend Getaway Rivals",
     market: "Resort", status: "Draft", tags: ["Resort"],
     notes: "Still gathering the competitor list for this set.",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-05-30T09:00:00Z",
@@ -112,22 +110,22 @@ export let COMPETITORS = [
   },
 ];
 
-// Many-to-many bridge between Competitors and Comparison Groups — the only
-// place group membership is recorded. A competitor with zero rows here
-// simply belongs to no group, which is a fully valid, fully functional
-// state. Deleting a group deletes only its rows here; deleting a competitor
+// Many-to-many bridge between Competitors and Competitive Sets — the only
+// place comp set membership is recorded. A competitor with zero rows here
+// simply belongs to no comp set, which is a fully valid, fully functional
+// state. Deleting a comp set deletes only its rows here; deleting a competitor
 // deletes only its rows here — never each other's owning record.
-export let GROUP_MEMBERSHIPS = [
-  { id: "CGM-11000", groupId: "CGRP-5000", competitorId: "CMP-6000" },
-  { id: "CGM-11001", groupId: "CGRP-5000", competitorId: "CMP-6001" },
-  { id: "CGM-11002", groupId: "CGRP-5000", competitorId: "CMP-6002" },
-  { id: "CGM-11003", groupId: "CGRP-5002", competitorId: "CMP-6000" },
-  { id: "CGM-11004", groupId: "CGRP-5001", competitorId: "CMP-6003" },
+export let COMP_SET_MEMBERSHIPS = [
+  { id: "CSM-11000", compSetId: "CSET-5000", competitorId: "CMP-6000" },
+  { id: "CSM-11001", compSetId: "CSET-5000", competitorId: "CMP-6001" },
+  { id: "CSM-11002", compSetId: "CSET-5000", competitorId: "CMP-6002" },
+  { id: "CSM-11003", compSetId: "CSET-5002", competitorId: "CMP-6000" },
+  { id: "CSM-11004", compSetId: "CSET-5001", competitorId: "CMP-6003" },
 ];
 
 // Room/Rate Plan Mapping, Source Configuration, and URL records all key off
-// `competitorId` only — never a groupId. A competitor's configuration is
-// identical whether or not it belongs to any Comparison Group.
+// `competitorId` only — never a compSetId. A competitor's configuration is
+// identical whether or not it belongs to any Competitive Set.
 // `competitorRoomCode` is an optional, stable site-specific identifier
 // alongside the human-readable `competitorRoomLabel` — blank until a Python
 // scraper discovers and fills it in; matching by label alone is workable but
@@ -168,6 +166,7 @@ export let SOURCE_CONFIGS = [
     sourceType: "Direct Website", sourceName: "Grand Palace — Direct", sourceUrl: "https://grandpalace.example.com/rooms",
     priority: "High", status: "Active", notes: "",
     xpath: "", cssSelector: "", apiEndpoint: "", authRequired: false, parserVersion: "",
+    lastCheckedAt: null, lastCheckStatus: "", lastCheckError: "",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-20T09:00:00Z",
   },
   {
@@ -175,15 +174,22 @@ export let SOURCE_CONFIGS = [
     sourceType: "Booking.com", sourceName: "Grand Palace — Booking.com", sourceUrl: "https://www.booking.com/hotel/us/grand-palace-example.html",
     priority: "Medium", status: "Draft", notes: "Awaiting selector confirmation.",
     xpath: "", cssSelector: "", apiEndpoint: "", authRequired: false, parserVersion: "",
+    lastCheckedAt: null, lastCheckStatus: "", lastCheckError: "",
     lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-12T09:00:00Z",
   },
 ];
 
-export let URL_RECORDS = [
-  {
-    id: "URL-10000", competitorId: "CMP-6002",
-    urlType: "Custom", label: "TripAdvisor Listing", url: "https://www.tripadvisor.com/Hotel_Review-example-Bayview_Suites.html",
-    status: "Active", notes: "",
-    lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-10T09:00:00Z",
-  },
-];
+// The Sources tab was previously split across SOURCE_CONFIGS and a
+// separate URL_RECORDS table — the URL Manager module. Both represented the
+// same underlying concept ("how do we reach this competitor's rates") with
+// no cross-validation between them, so URL_RECORDS has been folded into
+// SOURCE_CONFIGS (sourceType "Custom") and removed entirely. The row below
+// is the migrated former URL-10000 record.
+SOURCE_CONFIGS.push({
+  id: "SRC-9002", competitorId: "CMP-6002",
+  sourceType: "Custom", sourceName: "TripAdvisor Listing", sourceUrl: "https://www.tripadvisor.com/Hotel_Review-example-Bayview_Suites.html",
+  priority: "Medium", status: "Active", notes: "",
+  lastCheckedAt: null, lastCheckStatus: "", lastCheckError: "",
+  xpath: "", cssSelector: "", apiEndpoint: "", authRequired: false, parserVersion: "",
+  lastModifiedBy: "A. Whitfield", lastModifiedAt: "2026-06-10T09:00:00Z",
+});

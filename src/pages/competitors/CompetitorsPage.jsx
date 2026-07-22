@@ -29,8 +29,8 @@ import { formatDate } from "../../lib/format.js";
 import { computeCompetitorReadiness, readinessBucket } from "../../lib/competitorReadiness.js";
 import { PRIORITY_LEVELS } from "../../mocks/competitors.js";
 import { CompetitorForm } from "./CompetitorForm.jsx";
-import { GroupAssignModal } from "./GroupAssignModal.jsx";
-import { GroupManagerModal } from "./GroupManagerModal.jsx";
+import { CompSetAssignModal } from "./CompSetAssignModal.jsx";
+import { CompSetManagerModal } from "./CompSetManagerModal.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -42,11 +42,11 @@ function kpiRingVariant(pct) {
 // homepage: Select Benchmark Property (the left filter panel) -> Add
 // Competitor Hotels -> Room Mapping -> Rate Plan Mapping -> Source
 // Configuration -> Validation, all owned directly by the competitor with
-// zero requirement to belong to any Comparison Group. Groups are reachable
-// from here only as an optional filter facet plus the "Manage Comparison
-// Groups" toolbar action (create/rename/archive/delete inline, via
-// GroupManagerModal, without ever navigating away) and the bulk "Assign to
-// Group(s)" action (GroupAssignModal) — always a step *after* competitors
+// zero requirement to belong to any Competitive Set. Comp sets are reachable
+// from here only as an optional filter facet plus the "Manage Competitive
+// Sets" toolbar action (create/rename/archive/delete inline, via
+// CompSetManagerModal, without ever navigating away) and the bulk "Assign to
+// Comp Set(s)" action (CompSetAssignModal) — always a step *after* competitors
 // already exist, never the starting workflow.
 export function CompetitorsPage() {
   const data = useData();
@@ -56,7 +56,7 @@ export function CompetitorsPage() {
   const { selectedPropertyIds } = usePropertyContext();
 
   const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = usePersistedState("competitors.groupFilter", []);
+  const [groupFilter, setGroupFilter] = usePersistedState("competitors.compSetFilter", []);
   const [statusFilter, setStatusFilter] = usePersistedState("competitors.statusFilter", []);
   const [readinessFilter, setReadinessFilter] = usePersistedState("competitors.readinessFilter", []);
   const [sortKey, setSortKey] = usePersistedState("competitors.sortKey", "hotelName");
@@ -81,18 +81,18 @@ export function CompetitorsPage() {
     [data.competitors, selectedPropertyIds]
   );
   const groupsInScope = useMemo(
-    () => data.comparisonGroups.filter((g) => selectedPropertyIds.includes(g.propertyId) && g.status !== "Archived"),
-    [data.comparisonGroups, selectedPropertyIds]
+    () => data.compSets.filter((g) => selectedPropertyIds.includes(g.propertyId) && g.status !== "Archived"),
+    [data.compSets, selectedPropertyIds]
   );
-  // Includes archived groups too — used only by the inline Group Manager
+  // Includes archived comp sets too — used only by the inline Comp Set Manager
   // modal, which needs to offer Restore/Delete for them.
   const allGroupsInScope = useMemo(
-    () => data.comparisonGroups.filter((g) => selectedPropertyIds.includes(g.propertyId)),
-    [data.comparisonGroups, selectedPropertyIds]
+    () => data.compSets.filter((g) => selectedPropertyIds.includes(g.propertyId)),
+    [data.compSets, selectedPropertyIds]
   );
 
   const groupsForCompetitor = (competitorId) =>
-    data.groupMemberships.filter((m) => m.competitorId === competitorId).map((m) => data.comparisonGroups.find((g) => g.id === m.groupId)).filter(Boolean);
+    data.compSetMemberships.filter((m) => m.competitorId === competitorId).map((m) => data.compSets.find((g) => g.id === m.compSetId)).filter(Boolean);
   const tagsForCompetitor = (competitorId) => {
     const groups = groupsForCompetitor(competitorId);
     return [...new Set(groups.flatMap((g) => g.tags || []))];
@@ -146,7 +146,7 @@ export function CompetitorsPage() {
       });
     }
     if (groupFilter.length) {
-      const memberCompetitorIds = new Set(data.groupMemberships.filter((m) => groupFilter.includes(m.groupId)).map((m) => m.competitorId));
+      const memberCompetitorIds = new Set(data.compSetMemberships.filter((m) => groupFilter.includes(m.compSetId)).map((m) => m.competitorId));
       result = result.filter((c) => memberCompetitorIds.has(c.id));
     }
     if (readinessFilter.length) {
@@ -162,7 +162,7 @@ export function CompetitorsPage() {
     return result;
   }, [
     competitorsInScope, search, groupFilter, statusFilter, readinessFilter,
-    sortKey, sortDir, data.groupMemberships, data.comparisonGroups, readinessByCompetitor,
+    sortKey, sortDir, data.compSetMemberships, data.compSets, readinessByCompetitor,
   ]);
 
   const total = competitorsFiltered.length;
@@ -198,7 +198,7 @@ export function CompetitorsPage() {
     { key: "hotel", label: "Competitor Hotel", sortable: true },
     { key: "city", label: "City", sortable: true, width: 88 },
     { key: "star", label: "Star", sortable: true, width: 60 },
-    { key: "groups", label: "Groups", width: 160 },
+    { key: "groups", label: "Comp Sets", width: 160 },
     { key: "roomMapping", label: "Room Mapping", width: 116 },
     { key: "ratePlanMapping", label: "Rate Plan Mapping", width: 124 },
     { key: "source", label: "Source Status", width: 116 },
@@ -230,8 +230,8 @@ export function CompetitorsPage() {
   const handleDuplicate = (c) => { const copy = data.duplicateCompetitor(c); toast.info(`Duplicated as ${copy.id}.`); };
   const handleArchive = (c) => { data.archiveCompetitor(c); toast.info(`${c.hotelName} archived.`); };
   const handleDelete = () => { data.deleteCompetitorPermanently(confirmDelete.id); toast.success(`${confirmDelete.hotelName} permanently deleted.`); setConfirmDelete(null); };
-  const handleRemoveFromGroup = (competitorId, groupId, groupName) => {
-    data.removeGroupMembership(groupId, competitorId);
+  const handleRemoveFromGroup = (competitorId, compSetId, groupName) => {
+    data.removeCompSetMembership(compSetId, competitorId);
     toast.info(`Removed from ${groupName}.`);
   };
 
@@ -242,8 +242,8 @@ export function CompetitorsPage() {
   const handleBulkStatus = (status) => { data.bulkChangeStatusCompetitors(selection.selected, status); toast.info(`Status updated for ${selection.count} competitor(s).`); selection.clear(); };
   const handleBulkPriority = (priority) => { data.bulkChangePriorityCompetitors(selection.selected, priority); toast.info(`Priority updated for ${selection.count} competitor(s).`); selection.clear(); };
   const handleBulkAssign = (groupIds) => {
-    const created = data.bulkAssignCompetitorsToGroups(selection.selected, groupIds);
-    toast.success(created.length ? `Assigned ${selection.count} competitor(s) to ${groupIds.length} group(s).` : "No new memberships — already assigned.");
+    const created = data.bulkAssignCompetitorsToCompSets(selection.selected, groupIds);
+    toast.success(created.length ? `Assigned ${selection.count} competitor(s) to ${groupIds.length} comp set(s).` : "No new memberships — already assigned.");
     selection.clear();
   };
 
@@ -253,7 +253,7 @@ export function CompetitorsPage() {
     { label: "City", value: (c) => c.city },
     { label: "Country", value: (c) => c.country },
     { label: "Star Rating", value: (c) => c.starRating },
-    { label: "Groups", value: (c) => groupsForCompetitor(c.id).map((g) => g.name).join(", ") },
+    { label: "Comp Sets", value: (c) => groupsForCompetitor(c.id).map((g) => g.name).join(", ") },
     { label: "Benchmark Property", value: (c) => propertyName(c.propertyId) },
     { label: "Readiness", value: (c) => `${readinessByCompetitor.get(c.id)?.score ?? 0}%` },
     { label: "Priority", value: (c) => c.priority },
@@ -273,7 +273,7 @@ export function CompetitorsPage() {
             : [{ label: "Competitors" }]
         }
       />
-      <Topbar title="Competitors" subtitle="Map competitor rooms and rate plans against your own — Comparison Groups are optional." hidePropertySelector />
+      <Topbar title="Competitors" subtitle="Map competitor rooms and rate plans against your own — Competitive Sets are optional." hidePropertySelector />
 
       <div className="property-scoped-layout">
         <CompetitorFilterPanel
@@ -322,7 +322,7 @@ export function CompetitorsPage() {
           <Card padded={false}>
             <div style={{ padding: "20px 20px 0" }}>
               <div className="page-toolbar">
-                <SearchBar value={search} onChange={setSearch} placeholder="Search hotel, city, tag, group, URL..." disabled={!hasPropertySelection} />
+                <SearchBar value={search} onChange={setSearch} placeholder="Search hotel, city, tag, comp set, URL..." disabled={!hasPropertySelection} />
                 {filtersActive && (
                   <button className="btn btn--ghost btn--sm" onClick={resetFilters}>
                     <ResetIcon size={13} strokeWidth={2} /> Reset
@@ -330,7 +330,7 @@ export function CompetitorsPage() {
                 )}
                 <div className="page-toolbar__spacer" />
                 <button className="btn btn--ghost btn--md" onClick={() => setGroupManagerOpen(true)}>
-                  <FolderCog size={16} strokeWidth={2} /><span>Manage Comparison Groups</span>
+                  <FolderCog size={16} strokeWidth={2} /><span>Manage Competitive Sets</span>
                 </button>
                 <button className="btn btn--ghost btn--md" onClick={() => setImportOpen(true)} disabled={!hasPropertySelection}>
                   <Upload size={16} strokeWidth={2} /><span>Import</span>
@@ -355,7 +355,7 @@ export function CompetitorsPage() {
               {selection.count > 0 && (
                 <div className="page-toolbar" style={{ marginTop: -8, marginBottom: 16, flexWrap: "wrap" }}>
                   <button className="btn btn--ghost btn--sm" type="button" onClick={() => setAssignModalOpen(true)}>
-                    <FolderCog size={13} strokeWidth={2} /> Assign to Group(s)
+                    <FolderCog size={13} strokeWidth={2} /> Assign to Comp Set(s)
                   </button>
                   <span className="table__cell-muted" style={{ fontSize: 12.5, fontWeight: 700 }}>Change priority:</span>
                   {PRIORITY_LEVELS.map((p) => (
@@ -380,11 +380,11 @@ export function CompetitorsPage() {
                     <EmptyState
                       icon={Users2}
                       title="No competitors yet"
-                      message="Add a competitor hotel, then map its rooms and rate plans to your property's own rooms and rate plans — that mapping is what future rate collection compares. Comparison Groups are entirely optional and can be created later to organize competitors into market segments."
+                      message="Add a competitor hotel, then map its rooms and rate plans to your property's own rooms and rate plans — that mapping is what future rate collection compares. Competitive Sets are entirely optional and can be created later to organize competitors into market segments."
                       action={
                         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                           <Button variant="primary" size="sm" icon={Plus} onClick={openCreate}>Add First Competitor</Button>
-                          <Button variant="secondary" size="sm" icon={FolderCog} onClick={() => setGroupManagerOpen(true)}>Create Comparison Group (Optional)</Button>
+                          <Button variant="secondary" size="sm" icon={FolderCog} onClick={() => setGroupManagerOpen(true)}>Create Competitive Set (Optional)</Button>
                         </div>
                       }
                     />
@@ -413,7 +413,7 @@ export function CompetitorsPage() {
                       <td className="tabular" style={{ whiteSpace: "nowrap" }}>{c.starRating ? `${c.starRating}★` : "—"}</td>
                       <td style={{ whiteSpace: "nowrap" }}>
                         {groups.length === 0 ? (
-                          <span className="table__cell-muted">No group</span>
+                          <span className="table__cell-muted">No comp set</span>
                         ) : (
                           <div className="tag-chips">
                             {visibleGroups.map((g) => (
@@ -476,7 +476,7 @@ export function CompetitorsPage() {
 
       <ImportWizard open={importOpen} onClose={() => setImportOpen(false)} defaultEntityType="competitors" />
 
-      <GroupAssignModal
+      <CompSetAssignModal
         open={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         competitorIds={selection.selected}
@@ -485,7 +485,7 @@ export function CompetitorsPage() {
         onAssign={handleBulkAssign}
       />
 
-      <GroupManagerModal
+      <CompSetManagerModal
         open={groupManagerOpen}
         onClose={() => setGroupManagerOpen(false)}
         groups={allGroupsInScope}
@@ -497,7 +497,7 @@ export function CompetitorsPage() {
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDelete}
         title="Delete Competitor Permanently"
-        message={`Permanently delete "${confirmDelete?.hotelName}"? Its mappings, sources, and URLs will also be removed — any Comparison Groups it belongs to are unaffected. This cannot be undone.`}
+        message={`Permanently delete "${confirmDelete?.hotelName}"? Its mappings, sources, and URLs will also be removed — any Competitive Sets it belongs to are unaffected. This cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />

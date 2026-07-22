@@ -52,9 +52,8 @@ export function RoomMappingForm({ open, onClose, onSubmit, initial, rooms = [], 
   const setNum = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value === "" ? 0 : Number(e.target.value) }));
   const setField = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
 
-  // FeatureChipGrid options are plain strings used as both value and label
-  // (the same convention RatePlanForm's `seasons` field uses for Rate Season
-  // names) — room names, converted to/from ids at the form boundary since
+  // FeatureChipGrid options are plain strings used as both value and label —
+  // room names, converted to/from ids at the form boundary since
   // `internalRoomIds` is what the mapping record actually stores.
   const selectedRoomNames = form.internalRoomIds.map((id) => rooms.find((r) => r.id === id)?.name).filter(Boolean);
   const setRoomSelection = (names) => {

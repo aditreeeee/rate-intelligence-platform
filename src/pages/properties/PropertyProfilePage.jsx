@@ -49,7 +49,21 @@ export function PropertyProfilePage() {
   };
   const rooms = useMemo(() => (property ? data.rooms.filter((r) => r.propertyId === property.id) : []), [data.rooms, property]);
   const roomIds = useMemo(() => new Set(rooms.map((r) => r.id)), [rooms]);
-  const ratePlans = useMemo(() => data.ratePlans.filter((rp) => roomIds.has(rp.roomId)), [data.ratePlans, roomIds]);
+  // A Rate Plan shows up here if it has at least one entry in `ratePlanRooms`
+  // pointing at a room in this property — de-duplicated so a Rate Plan with
+  // multiple rooms in this property only appears once. Rate Plans no longer
+  // carry a direct `roomId`.
+  const ratePlanRoomCountByRatePlanId = useMemo(() => {
+    const counts = {};
+    data.ratePlanRooms.filter((rp) => roomIds.has(rp.roomId)).forEach((rp) => {
+      counts[rp.ratePlanId] = (counts[rp.ratePlanId] || 0) + 1;
+    });
+    return counts;
+  }, [data.ratePlanRooms, roomIds]);
+  const ratePlans = useMemo(
+    () => data.ratePlans.filter((rp) => ratePlanRoomCountByRatePlanId[rp.id] > 0),
+    [data.ratePlans, ratePlanRoomCountByRatePlanId]
+  );
 
   if (!property) {
     return (
@@ -231,15 +245,14 @@ export function PropertyProfilePage() {
               />
             ) : (
               <div className="detail-linked-list">
-                {ratePlans.map((rp) => {
-                  const seasonCount = (rp.seasons || []).length;
-                  return (
-                    <div key={rp.id} className="detail-linked-item" style={{ cursor: "pointer" }} onClick={() => navigate(`/portal/rate-plans/${rp.id}`)}>
-                      <span>{rp.name}</span>
-                      <span className="table__cell-muted">{seasonCount ? `${seasonCount} season${seasonCount === 1 ? "" : "s"}` : "No seasons"}</span>
-                    </div>
-                  );
-                })}
+                {ratePlans.map((rp) => (
+                  <div key={rp.id} className="detail-linked-item" style={{ cursor: "pointer" }} onClick={() => navigate(`/portal/rate-plans/${rp.id}`)}>
+                    <span>{rp.name} <span className="table__cell-muted">({ratePlanRoomCountByRatePlanId[rp.id]} room{ratePlanRoomCountByRatePlanId[rp.id] === 1 ? "" : "s"})</span></span>
+                    <span className="table__cell-muted">
+                      {rp.startDate || rp.endDate ? `${rp.startDate || "…"} – ${rp.endDate || "…"}` : "Always applicable"}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

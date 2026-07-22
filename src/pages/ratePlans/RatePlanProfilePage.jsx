@@ -1,38 +1,75 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Tag, MapPin, Pencil, Copy, Archive, RotateCcw, Trash2, Settings2,
-  LayoutGrid, BedDouble, CalendarRange, UtensilsCrossed, Ban, UsersRound,
-  Percent, StickyNote, History,
+  Tag, MapPin, Pencil, Copy, Archive, RotateCcw, Trash2,
+  LayoutGrid, BedDouble, UtensilsCrossed, Ban,
+  Percent, StickyNote, History, Plus,
 } from "lucide-react";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
 import { Tabs } from "../../components/ui/Tabs.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { Button } from "../../components/ui/Button.jsx";
-import { StatusBadge, Badge } from "../../components/ui/Badge.jsx";
-import { Textarea } from "../../components/ui/Input.jsx";
+import { StatusBadge } from "../../components/ui/Badge.jsx";
+import { Textarea, Select } from "../../components/ui/Input.jsx";
 import { ConfirmModal } from "../../components/ui/Modal.jsx";
 import { EmptyState } from "../../components/ui/EmptyState.jsx";
-import { RoomClassificationSummary } from "../../components/ui/RoomClassificationSummary.jsx";
 import { formatDate, formatCurrency } from "../../lib/format.js";
 import { useData } from "../../context/DataContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { usePermissions } from "../../hooks/usePermissions.js";
 import { mealPlanLabel } from "../../mocks/ratePlans.js";
 import { RatePlanForm } from "./RatePlanForm.jsx";
-import { RateSeasonManager } from "./RateSeasonManager.jsx";
+import { RatePlanRoomPricingRangesEditor } from "./PricingRangesTable.jsx";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
-  { key: "room", label: "Room Information", icon: BedDouble },
-  { key: "pricing", label: "Seasonal Pricing", icon: CalendarRange },
+  { key: "rooms", label: "Rooms", icon: BedDouble },
   { key: "mealPlan", label: "Meal Plan", icon: UtensilsCrossed },
   { key: "cancellation", label: "Cancellation Policy", icon: Ban },
-  { key: "occupancy", label: "Occupancy Rules", icon: UsersRound },
   { key: "taxes", label: "Taxes & Fees", icon: Percent },
   { key: "notes", label: "Notes", icon: StickyNote },
   { key: "audit", label: "Audit Information", icon: History },
 ];
+
+// One card per Rate Plan Room — room picker (to change which room this card
+// applies to), a delete action, and its own Pricing Ranges editor. This tab,
+// unlike the Add/Edit modal, persists immediately since the parent Rate Plan
+// already exists here (the same "genuinely editable" convention this
+// codebase uses elsewhere for profile-page tabs).
+function RatePlanRoomCard({ ratePlanRoom, roomOptions, onChangeRoom, onDelete, canDelete }) {
+  const room = roomOptions.find((r) => r.id === ratePlanRoom.roomId);
+  return (
+    <Card className="rate-plan-room-card" padded={false} glow={false}>
+      <div className="rate-plan-room-card__header">
+        <div className="rate-plan-room-card__room-field">
+          <Select
+            placeholder="Select a room"
+            options={roomOptions.map((r) => r.label)}
+            value={room ? room.label : ""}
+            onChange={(e) => {
+              const r = roomOptions.find((rr) => rr.label === e.target.value);
+              if (r) onChangeRoom(r.id);
+            }}
+          />
+        </div>
+        <div className="rate-plan-room-card__actions">
+          <button
+            type="button"
+            className="table__action-btn table__action-btn--danger"
+            title="Remove Room"
+            onClick={onDelete}
+            disabled={!canDelete}
+          >
+            <Trash2 size={15} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+      <div className="rate-plan-room-card__body">
+        <RatePlanRoomPricingRangesEditor ratePlanRoomId={ratePlanRoom.id} />
+      </div>
+    </Card>
+  );
+}
 
 export function RatePlanProfilePage() {
   const { id } = useParams();
@@ -43,16 +80,24 @@ export function RatePlanProfilePage() {
   const [active, setActive] = useState("overview");
   const [formOpen, setFormOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteRoomId, setConfirmDeleteRoomId] = useState(null);
   const [notes, setNotes] = useState("");
-  const [seasonManagerOpen, setSeasonManagerOpen] = useState(false);
+  const [newRoomId, setNewRoomId] = useState("");
 
   const ratePlan = data.ratePlans.find((rp) => rp.id === id);
-  const room = ratePlan ? data.rooms.find((r) => r.id === ratePlan.roomId) : null;
-  const property = room ? data.properties.find((p) => p.id === room.propertyId) : null;
+  const ratePlanRooms = useMemo(() => (ratePlan ? data.roomsForRatePlan(ratePlan.id) : []), [data, ratePlan]);
+  const roomLookup = (roomId) => data.rooms.find((r) => r.id === roomId);
+  const propertyForRoom = (room) => (room ? data.properties.find((p) => p.id === room.propertyId) : null);
+  const pricingRangeCount = ratePlanRooms.reduce((sum, rp) => sum + rp.pricingRanges.length, 0);
 
-  const assignedSeasons = ratePlan
-    ? (ratePlan.seasons || []).map((name) => (data.masters.rateSeasons || []).find((s) => s.name === name)).filter(Boolean)
-    : [];
+  // Rooms already used by this rate plan can't be picked again for another
+  // card (nor re-added via "+ Add Room").
+  const usedRoomIds = new Set(ratePlanRooms.map((rp) => rp.roomId));
+  const allRoomOptions = useMemo(
+    () => data.rooms.map((r) => ({ id: r.id, label: `${r.name} — ${propertyForRoom(r)?.name || "Unknown Property"}` })),
+    [data.rooms, data.properties]
+  );
+  const roomOptionsForNew = allRoomOptions.filter((r) => !usedRoomIds.has(r.id));
 
   if (!ratePlan) {
     return (
@@ -63,8 +108,9 @@ export function RatePlanProfilePage() {
     );
   }
 
-  const handleSubmit = (form, opts) => {
+  const handleSubmit = (form, ratePlanRoomsDraft, opts) => {
     data.updateRatePlan({ ...ratePlan, ...form });
+    if (ratePlanRoomsDraft) data.saveRatePlanRooms(ratePlan.id, ratePlanRoomsDraft);
     toast.success(`${form.name} updated.`);
     if (!opts?.keepOpen) setFormOpen(false);
   };
@@ -83,13 +129,34 @@ export function RatePlanProfilePage() {
     navigate("/portal/rate-plans");
   };
 
+  const handleAddRoom = () => {
+    if (!newRoomId) return;
+    data.addRatePlanRoom({ ratePlanId: ratePlan.id, roomId: newRoomId });
+    toast.success("Room added to rate plan.");
+    setNewRoomId("");
+  };
+
+  const handleChangeRoom = (ratePlanRoom, roomId) => {
+    data.updateRatePlanRoom({ ...ratePlanRoom, roomId });
+    toast.success("Room updated.");
+  };
+
+  const handleDeleteRatePlanRoom = () => {
+    data.deleteRatePlanRoom(confirmDeleteRoomId);
+    toast.success("Room removed from rate plan.");
+    setConfirmDeleteRoomId(null);
+  };
+
+  const roomNames = ratePlanRooms.map((rp) => roomLookup(rp.roomId)?.name).filter(Boolean);
+  const firstRoom = ratePlanRooms.length ? roomLookup(ratePlanRooms[0].roomId) : null;
+  const firstProperty = propertyForRoom(firstRoom);
+
   return (
     <div>
       <Breadcrumbs
         items={[
           { label: "Properties", to: "/portal/properties" },
-          ...(property ? [{ label: property.name, to: `/portal/properties/${property.id}` }] : []),
-          ...(room ? [{ label: room.name, to: `/portal/rooms/${room.id}` }] : []),
+          ...(firstProperty ? [{ label: firstProperty.name, to: `/portal/properties/${firstProperty.id}` }] : []),
           { label: ratePlan.name },
         ]}
       />
@@ -100,7 +167,7 @@ export function RatePlanProfilePage() {
           <div className="profile-header__info">
             <div className="profile-header__title">{ratePlan.name}</div>
             <div className="profile-header__subtitle">
-              <MapPin size={13} strokeWidth={2} /> {room?.name || "Unlinked room"} &middot; {property?.name || "—"}
+              <MapPin size={13} strokeWidth={2} /> {roomNames.length ? roomNames.join(", ") : "No rooms yet"}
               <span style={{ marginLeft: 8 }}><StatusBadge status={ratePlan.status} /></span>
             </div>
           </div>
@@ -123,26 +190,29 @@ export function RatePlanProfilePage() {
 
       <div className="page-section">
         <Card className="current-price-card">
-          <div className="current-price-card__label"><CalendarRange size={14} strokeWidth={2} /> Assigned Rate Seasons</div>
-          {assignedSeasons.length > 0 ? (
-            <>
-              <div className="current-price-card__row">
-                {assignedSeasons.map((season) => (
-                  <div className="current-price-card__stat" key={season.id}>
-                    <span>{season.category}</span>
-                    <strong>{season.name}</strong>
-                  </div>
-                ))}
-              </div>
-              <p className="current-price-card__range">
-                Master configuration only — default pricing where set. Historical and live pricing will be tracked from Phase 3 onward.
-              </p>
-            </>
-          ) : (
-            <p className="current-price-card__empty">
-              No Rate Seasons assigned yet. Edit this rate plan's Seasonal Pricing section to attach one.
-            </p>
-          )}
+          <div className="current-price-card__label"><Tag size={14} strokeWidth={2} /> Pricing Range</div>
+          <div className="current-price-card__row">
+            <div className="current-price-card__stat">
+              <span>Applicable Window</span>
+              <strong>
+                {ratePlan.startDate || ratePlan.endDate
+                  ? `${formatDate(ratePlan.startDate)} – ${formatDate(ratePlan.endDate)}`
+                  : "Always applicable"}
+              </strong>
+            </div>
+            <div className="current-price-card__stat">
+              <span>Base Price</span>
+              <strong className="tabular">{ratePlan.basePrice ? formatCurrency(ratePlan.basePrice) : "—"}</strong>
+            </div>
+            <div className="current-price-card__stat">
+              <span>Rooms</span>
+              <strong className="tabular">{ratePlanRooms.length}</strong>
+            </div>
+            <div className="current-price-card__stat">
+              <span>Pricing Range Rows</span>
+              <strong className="tabular">{pricingRangeCount}</strong>
+            </div>
+          </div>
         </Card>
       </div>
 
@@ -156,57 +226,44 @@ export function RatePlanProfilePage() {
             <div className="detail-field"><span>Rate Plan ID</span><strong className="tabular">{ratePlan.id}</strong></div>
             <div className="detail-field"><span>Name</span><strong>{ratePlan.name}</strong></div>
             <div className="detail-field"><span>Status</span><strong><StatusBadge status={ratePlan.status} /></strong></div>
-            <div className="detail-field"><span>Rate Seasons</span><strong className="tabular">{assignedSeasons.length}</strong></div>
+            <div className="detail-field"><span>Start Date</span><strong className="tabular">{formatDate(ratePlan.startDate)}</strong></div>
+            <div className="detail-field"><span>End Date</span><strong className="tabular">{formatDate(ratePlan.endDate)}</strong></div>
+            <div className="detail-field"><span>Base Price</span><strong className="tabular">{ratePlan.basePrice ? formatCurrency(ratePlan.basePrice) : "—"}</strong></div>
+            <div className="detail-field"><span>Rooms</span><strong className="tabular">{ratePlanRooms.length}</strong></div>
           </div>
         </Card>
       )}
 
-      {active === "room" && (
+      {active === "rooms" && (
         <Card>
-          {room ? (
-            <RoomClassificationSummary room={room} />
-          ) : (
-            <EmptyState icon={BedDouble} title="No linked room" message="This rate plan is not linked to a room." />
+          {ratePlanRooms.length === 0 && (
+            <EmptyState icon={BedDouble} title="No rooms yet" message="This rate plan isn't linked to any rooms yet. Add one below." />
           )}
-        </Card>
-      )}
-
-      {active === "pricing" && (
-        <Card padded={false}>
-          <div style={{ padding: "20px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800 }}>Seasonal Pricing</h3>
-            <Button variant="secondary" size="sm" icon={Settings2} onClick={() => setSeasonManagerOpen(true)}>Manage Rate Seasons</Button>
-          </div>
-          <div style={{ padding: 20 }}>
-            <p className="master-manager__hint" style={{ marginBottom: 16 }}>
-              Rate Seasons are reusable master templates (Standard, Peak, Weekend, Festival, Holiday, Event Season) — attach
-              or remove them from the Edit form's Seasonal Pricing section. Default pricing shown here is master
-              configuration only; historical and live pricing will be tracked from Phase 3 onward.
-            </p>
-            {assignedSeasons.length === 0 ? (
-              <EmptyState
-                icon={CalendarRange}
-                title="No Rate Seasons assigned"
-                message="Edit this rate plan and attach one or more Rate Season templates."
-                action={<Button variant="secondary" size="sm" icon={Pencil} onClick={() => setFormOpen(true)}>Edit Rate Plan</Button>}
+          {ratePlanRooms.map((rp) => (
+            <RatePlanRoomCard
+              key={rp.id}
+              ratePlanRoom={rp}
+              roomOptions={[...roomOptionsForNew, ...(roomLookup(rp.roomId) ? [{ id: rp.roomId, label: `${roomLookup(rp.roomId).name} — ${propertyForRoom(roomLookup(rp.roomId))?.name || "Unknown Property"}` }] : [])]}
+              onChangeRoom={(roomId) => handleChangeRoom(rp, roomId)}
+              onDelete={() => setConfirmDeleteRoomId(rp.id)}
+              canDelete
+            />
+          ))}
+          <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", marginTop: "var(--space-4)" }}>
+            <div style={{ flex: 1, maxWidth: 320 }}>
+              <Select
+                placeholder="Select a room to add"
+                options={roomOptionsForNew.map((r) => r.label)}
+                value={roomOptionsForNew.find((r) => r.id === newRoomId)?.label || ""}
+                onChange={(e) => {
+                  const r = roomOptionsForNew.find((rr) => rr.label === e.target.value);
+                  setNewRoomId(r?.id || "");
+                }}
               />
-            ) : (
-              <div className="detail-linked-list">
-                {assignedSeasons.map((season) => (
-                  <div key={season.id} className="detail-linked-item">
-                    <span>
-                      <Badge variant="info">{season.category}</Badge> {season.name}
-                    </span>
-                    <span className="table__cell-muted tabular">
-                      {season.hasDefaultPricing
-                        ? `Base ${formatCurrency(season.defaultBaseRate, season.currency)} · Weekend ${formatCurrency(season.defaultWeekendRate, season.currency)}`
-                        : "No default pricing"}
-                      {season.hasValidityRange && ` · ${formatDate(season.validFrom)} – ${formatDate(season.validTo)}`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
+            <Button variant="secondary" size="sm" icon={Plus} onClick={handleAddRoom} disabled={!newRoomId}>
+              Add Room
+            </Button>
           </div>
         </Card>
       )}
@@ -232,24 +289,6 @@ export function RatePlanProfilePage() {
               </>
             )}
           </div>
-        </Card>
-      )}
-
-      {active === "occupancy" && (
-        <Card>
-          {room ? (
-            <div className="detail-grid">
-              <div className="detail-field"><span>Maximum Adults</span><strong className="tabular">{room.maxAdults}</strong></div>
-              <div className="detail-field"><span>Maximum Children</span><strong className="tabular">{room.maxChildren}</strong></div>
-              <div className="detail-field"><span>Maximum Infants</span><strong className="tabular">{room.maxInfants}</strong></div>
-              <div className="detail-field"><span>Maximum Occupancy</span><strong className="tabular">{room.maxOccupancy}</strong></div>
-              <div className="detail-field"><span>Base Occupancy</span><strong className="tabular">{room.baseOccupancy}</strong></div>
-              <div className="detail-field"><span>Extra Adult Allowed</span><strong>{room.extraAdultAllowed ? "Yes" : "No"}</strong></div>
-              <div className="detail-field"><span>Extra Child Allowed</span><strong>{room.extraChildAllowed ? "Yes" : "No"}</strong></div>
-            </div>
-          ) : (
-            <EmptyState icon={UsersRound} title="No linked room" message="Occupancy rules come from the linked room." />
-          )}
         </Card>
       )}
 
@@ -283,7 +322,7 @@ export function RatePlanProfilePage() {
         <Card>
           <div className="detail-grid">
             <div className="detail-field"><span>Rate Plan ID</span><strong className="tabular">{ratePlan.id}</strong></div>
-            <div className="detail-field"><span>Room ID</span><strong className="tabular">{ratePlan.roomId}</strong></div>
+            <div className="detail-field"><span>Rooms</span><strong className="tabular">{roomNames.join(", ") || "—"}</strong></div>
             <div className="detail-field"><span>Last Modified</span><strong className="tabular">{formatDate(ratePlan.lastModifiedAt)}</strong></div>
             <div className="detail-field"><span>Last Modified By</span><strong>{ratePlan.lastModifiedBy || "—"}</strong></div>
           </div>
@@ -295,21 +334,28 @@ export function RatePlanProfilePage() {
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
         initial={ratePlan}
-        roomLabel={room?.name}
-        rooms={room ? [{ id: room.id, label: `${room.name} — ${property?.name || "Unknown Property"}` }] : []}
+        rooms={allRoomOptions}
         allRooms={data.rooms}
-        scopeRoomId={room?.id || ""}
+        scopeRoomId=""
       />
-
-      <RateSeasonManager open={seasonManagerOpen} onClose={() => setSeasonManagerOpen(false)} />
 
       <ConfirmModal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDeletePermanently}
         title="Delete Rate Plan Permanently"
-        message={`"${ratePlan.name}" is archived. Permanently deleting it cannot be undone. Its Rate Season templates are shared master data and will not be affected.`}
+        message={`"${ratePlan.name}" is archived. Permanently deleting it cannot be undone. All of its rooms' Pricing Range rows will be deleted along with it.`}
         confirmLabel="Delete Permanently"
+        danger
+      />
+
+      <ConfirmModal
+        open={!!confirmDeleteRoomId}
+        onClose={() => setConfirmDeleteRoomId(null)}
+        onConfirm={handleDeleteRatePlanRoom}
+        title="Remove Room from Rate Plan"
+        message="Remove this room from the rate plan? Its Pricing Range rows for this room will be deleted along with it. This action cannot be undone."
+        confirmLabel="Remove"
         danger
       />
     </div>

@@ -1,10 +1,10 @@
-// Master data for Room Types, Amenities, Room Templates, and Rate Seasons.
+// Master data for Room Types, Amenities, and Room Templates.
 //
 // These are modeled as editable records (`{ id, name, ... }`) rather than
 // plain string constants specifically so the frontend CRUD here (add/edit/
 // delete via DataContext) maps 1:1 onto future ASP.NET MVC master-table
 // controllers backed by SQL Server (e.g. `dbo.RoomTypes`, `dbo.Amenities`,
-// `dbo.RoomTemplates`, `dbo.RateSeasons`) — swapping DataContext's dispatch
+// `dbo.RoomTemplates`) — swapping DataContext's dispatch
 // calls for API calls is the only change needed later; no consuming
 // component reads these shapes differently than any other master table would.
 
@@ -101,53 +101,6 @@ export const ROOM_TEMPLATES_MASTER = [
       bestSuitedFor: ["Families", "Groups"],
       suiteFeatures: [],
     },
-  },
-];
-
-// Rate Seasons ("Seasonal Pricing Rules") are reusable master templates that
-// Rate Plans reference by name (the same referencing convention Rooms use
-// for `roomType`/`amenities`) instead of duplicating pricing per plan. A
-// season optionally carries default pricing and a validity range, but it
-// never stores historical or live pricing — Phase 3 will attach scraped
-// rate observations against these definitions once that pipeline exists.
-export const RATE_SEASON_CATEGORIES = ["Standard", "Peak", "Weekend", "Festival", "Holiday", "Event Season"];
-
-export const RATE_SEASONS_MASTER = [
-  {
-    id: "SSN-1000", name: "Standard Season", category: "Standard",
-    hasDefaultPricing: true, defaultBaseRate: 220, defaultWeekendRate: 250, defaultChildRate: 15, defaultExtraAdultRate: 30, currency: "USD",
-    hasValidityRange: false, validFrom: "", validTo: "",
-    archived: false,
-  },
-  {
-    id: "SSN-1001", name: "Peak Season", category: "Peak",
-    hasDefaultPricing: true, defaultBaseRate: 340, defaultWeekendRate: 395, defaultChildRate: 25, defaultExtraAdultRate: 45, currency: "USD",
-    hasValidityRange: true, validFrom: "2026-12-15", validTo: "2027-01-10",
-    archived: false,
-  },
-  {
-    id: "SSN-1002", name: "Weekend Premium", category: "Weekend",
-    hasDefaultPricing: true, defaultBaseRate: 0, defaultWeekendRate: 60, defaultChildRate: 0, defaultExtraAdultRate: 0, currency: "USD",
-    hasValidityRange: false, validFrom: "", validTo: "",
-    archived: false,
-  },
-  {
-    id: "SSN-1003", name: "Festival Season", category: "Festival",
-    hasDefaultPricing: false, defaultBaseRate: 0, defaultWeekendRate: 0, defaultChildRate: 0, defaultExtraAdultRate: 0, currency: "USD",
-    hasValidityRange: true, validFrom: "2026-10-15", validTo: "2026-11-05",
-    archived: false,
-  },
-  {
-    id: "SSN-1004", name: "Holiday Season", category: "Holiday",
-    hasDefaultPricing: true, defaultBaseRate: 300, defaultWeekendRate: 350, defaultChildRate: 20, defaultExtraAdultRate: 40, currency: "USD",
-    hasValidityRange: true, validFrom: "2026-12-20", validTo: "2027-01-02",
-    archived: false,
-  },
-  {
-    id: "SSN-1005", name: "Special Event", category: "Event Season",
-    hasDefaultPricing: false, defaultBaseRate: 0, defaultWeekendRate: 0, defaultChildRate: 0, defaultExtraAdultRate: 0, currency: "USD",
-    hasValidityRange: false, validFrom: "", validTo: "",
-    archived: false,
   },
 ];
 

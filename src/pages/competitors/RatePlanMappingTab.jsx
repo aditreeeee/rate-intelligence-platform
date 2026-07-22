@@ -15,7 +15,7 @@ const STATUS_VARIANT = { Mapped: "success", "Needs Review": "warning", Unmapped:
 
 // Module 4b — Rate Plan Mapping. This is the real comparison unit — rate
 // plans, not whole properties. Belongs directly to a Competitor, not to a
-// Comparison Group. "Internal Rate Plan" options come strictly from the
+// Competitive Set. "Internal Rate Plan" options come strictly from the
 // benchmark property (the Phase 1 property this competitor is scoped
 // under), scoped to that property's own rooms; never edited here.
 export function RatePlanMappingTab({ competitor }) {

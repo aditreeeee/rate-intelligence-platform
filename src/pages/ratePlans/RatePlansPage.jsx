@@ -23,9 +23,10 @@ import { useToast } from "../../context/ToastContext.jsx";
 import { useSelection } from "../../hooks/useSelection.js";
 import { usePermissions } from "../../hooks/usePermissions.js";
 import { usePersistedState } from "../../hooks/usePersistedState.js";
-import { usePaginatedSortedFiltered } from "../../lib/format.js";
+import { usePaginatedSortedFiltered, formatDate, formatCurrency } from "../../lib/format.js";
 import { RATE_PLAN_STATUSES, mealPlanLabel } from "../../mocks/ratePlans.js";
 import { RatePlanForm } from "./RatePlanForm.jsx";
+import { TagChips } from "../../components/ui/TagChips.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -35,7 +36,8 @@ const BASE_COLUMNS = [
   { key: "room", label: "Room", sortable: false, width: 150 },
   { key: "property", label: "Property", sortable: false, width: 160 },
   { key: "mealPlan", label: "Meal Plan", sortable: false, width: 150 },
-  { key: "seasons", label: "Rate Seasons", sortable: false, width: 130 },
+  { key: "pricingRange", label: "Pricing Range", sortable: false, width: 190 },
+  { key: "basePrice", label: "Base Price", sortable: false, width: 110 },
   { key: "status", label: "Status", sortable: true, width: 100 },
   { key: "actions", label: "", sortable: false, width: 150 },
 ];
@@ -112,10 +114,18 @@ export function RatePlansPage() {
   const scopeRoomId = effectiveRoomIds.length === 1 ? effectiveRoomIds[0] : "";
   const selectedRoom = data.rooms.find((r) => r.id === scopeRoomId);
 
+  // A Rate Plan is now "in scope" if at least one of its Rooms references a
+  // room within the current property/room selection.
+  const roomNamesForRatePlan = (ratePlanId) =>
+    data.ratePlanRooms.filter((rp) => rp.ratePlanId === ratePlanId).map((rp) => roomLookup(rp.roomId)?.name).filter(Boolean);
+
   const ratePlansInScope = useMemo(() => {
     const roomIdSet = new Set(effectiveRoomIds);
-    return data.ratePlans.filter((rp) => roomIdSet.has(rp.roomId));
-  }, [data.ratePlans, effectiveRoomIds]);
+    const inScopeRatePlanIds = new Set(
+      data.ratePlanRooms.filter((rp) => roomIdSet.has(rp.roomId)).map((rp) => rp.ratePlanId)
+    );
+    return data.ratePlans.filter((rp) => inScopeRatePlanIds.has(rp.id));
+  }, [data.ratePlans, data.ratePlanRooms, effectiveRoomIds]);
 
   const ratePlansInView = useMemo(
     () => ratePlansInScope.filter((rp) => (viewMode === "archived" ? rp.status === "Archived" : rp.status !== "Archived")),
@@ -171,12 +181,14 @@ export function RatePlansPage() {
   const openCreate = () => { setEditing(null); setFormOpen(true); };
   const openEdit = (rp) => { setEditing(rp); setFormOpen(true); };
 
-  const handleSubmit = (form, opts) => {
+  const handleSubmit = (form, ratePlanRoomsDraft, opts) => {
     if (editing) {
       data.updateRatePlan({ ...editing, ...form });
+      data.saveRatePlanRooms(editing.id, ratePlanRoomsDraft);
       toast.success(`${form.name} updated.`);
     } else {
       const created = data.addRatePlan(form);
+      data.saveRatePlanRooms(created.id, ratePlanRoomsDraft);
       toast.success(`${created.name} created as ${created.id}.`);
     }
     if (!opts?.keepOpen) setFormOpen(false);
@@ -229,10 +241,20 @@ export function RatePlansPage() {
   const exportColumns = [
     { label: "Rate Plan ID", value: (rp) => rp.id },
     { label: "Name", value: (rp) => rp.name },
-    { label: "Room", value: (rp) => roomLookup(rp.roomId)?.name || "" },
-    { label: "Property", value: (rp) => propertyForRoom(roomLookup(rp.roomId))?.name || "" },
+    { label: "Room", value: (rp) => roomNamesForRatePlan(rp.id).join(", ") },
+    {
+      label: "Property",
+      value: (rp) => {
+        const names = new Set(
+          data.ratePlanRooms.filter((p) => p.ratePlanId === rp.id).map((p) => propertyForRoom(roomLookup(p.roomId))?.name).filter(Boolean)
+        );
+        return [...names].join(", ");
+      },
+    },
     { label: "Meal Plan", value: (rp) => `${rp.mealPlan} (${mealPlanLabel(rp.mealPlan)})` },
-    { label: "Rate Seasons", value: (rp) => (rp.seasons || []).join(", ") },
+    { label: "Start Date", value: (rp) => rp.startDate || "" },
+    { label: "End Date", value: (rp) => rp.endDate || "" },
+    { label: "Base Price", value: (rp) => (rp.basePrice ?? "") },
     { label: "Status", value: (rp) => rp.status },
   ];
   const exportRowsData = selection.count ? ratePlansInView.filter((rp) => selection.selected.includes(rp.id)) : pageData;
@@ -328,8 +350,12 @@ export function RatePlansPage() {
               )
             }
             renderRow={(rp) => {
-              const room = roomLookup(rp.roomId);
-              const property = propertyForRoom(room);
+              const roomNames = roomNamesForRatePlan(rp.id);
+              const properties = [
+                ...new Set(
+                  data.ratePlanRooms.filter((p) => p.ratePlanId === rp.id).map((p) => propertyForRoom(roomLookup(p.roomId))?.name).filter(Boolean)
+                ),
+              ];
               return (
                 <tr key={rp.id}>
                   <td>
@@ -340,10 +366,13 @@ export function RatePlansPage() {
                     <div className="table__cell-primary">{rp.name}</div>
                     <div className="table__cell-muted">{rp.cancellationPolicy}</div>
                   </td>
-                  <td className="table__cell-muted">{room?.name || "—"}</td>
-                  <td className="table__cell-muted">{property?.name || "—"}</td>
+                  <td><TagChips tags={roomNames} max={2} /></td>
+                  <td className="table__cell-muted">{properties.join(", ") || "—"}</td>
                   <td title={mealPlanLabel(rp.mealPlan)}>{rp.mealPlan}</td>
-                  <td className="table__cell-muted">{(rp.seasons || []).length ? `${rp.seasons.length} season${rp.seasons.length === 1 ? "" : "s"}` : "—"}</td>
+                  <td className="table__cell-muted">
+                    {rp.startDate || rp.endDate ? `${formatDate(rp.startDate)} – ${formatDate(rp.endDate)}` : "Always applicable"}
+                  </td>
+                  <td className="tabular table__cell-muted">{rp.basePrice ? formatCurrency(rp.basePrice) : "—"}</td>
                   <td><StatusBadge status={rp.status} /></td>
                   <td>
                     <div className="table__actions">

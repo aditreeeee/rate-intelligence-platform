@@ -16,7 +16,7 @@ const SUGGESTIONS = {
 const CHECK_TAB = { info: "overview", roomMapping: "roomMapping", ratePlanMapping: "ratePlanMapping", sourceUrls: "sources" };
 
 // Module 7 — Validation Center. Belongs directly to a Competitor, not to a
-// Comparison Group. A pure readiness readout, not a dashboard: no pricing,
+// Competitive Set. A pure readiness readout, not a dashboard: no pricing,
 // no history, no trends — just "is this competitor configured enough for
 // Phase 3 to eventually collect rates against."
 export function ValidationTab({ competitor, onNavigateTab }) {

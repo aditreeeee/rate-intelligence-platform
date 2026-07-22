@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Building2, MapPin, Pencil, Copy, Archive, RotateCcw, Trash2, Award,
-  LayoutGrid, BedDouble, Tag as TagIcon, PlugZap, Link2, ShieldCheck, StickyNote, History,
+  LayoutGrid, BedDouble, Tag as TagIcon, PlugZap, ShieldCheck, StickyNote, History,
   CheckCircle2, AlertTriangle, ArrowRight, ListChecks, Activity, Globe, Star, MapPinned, FolderCog,
 } from "lucide-react";
 import { Breadcrumbs } from "../../components/ui/Breadcrumbs.jsx";
@@ -22,23 +22,21 @@ import { CompetitorForm } from "./CompetitorForm.jsx";
 import { RoomMappingTab } from "./RoomMappingTab.jsx";
 import { RatePlanMappingTab } from "./RatePlanMappingTab.jsx";
 import { SourcesTab } from "./SourcesTab.jsx";
-import { UrlManagerTab } from "./UrlManagerTab.jsx";
 import { ValidationTab } from "./ValidationTab.jsx";
-import { CompetitorGroupsTab } from "./CompetitorGroupsTab.jsx";
+import { CompetitorCompSetsTab } from "./CompetitorCompSetsTab.jsx";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
   { key: "roomMapping", label: "Room Mapping", icon: BedDouble },
   { key: "ratePlanMapping", label: "Rate Plan Mapping", icon: TagIcon },
   { key: "sources", label: "Sources", icon: PlugZap },
-  { key: "urls", label: "URL Manager", icon: Link2 },
   { key: "validation", label: "Validation", icon: ShieldCheck },
-  { key: "groups", label: "Groups", icon: FolderCog },
+  { key: "compsets", label: "Comp Sets", icon: FolderCog },
   { key: "notes", label: "Notes", icon: StickyNote },
   { key: "audit", label: "Audit Information", icon: History },
 ];
 
-const ACTIVITY_ICON = { competitor: Building2, roomMapping: BedDouble, ratePlanMapping: TagIcon, sourceConfig: PlugZap, urlRecord: Link2 };
+const ACTIVITY_ICON = { competitor: Building2, roomMapping: BedDouble, ratePlanMapping: TagIcon, sourceConfig: PlugZap };
 
 function kpiRingVariant(pct) {
   return pct === 100 ? "success" : pct === 0 ? "danger" : "warning";
@@ -47,7 +45,7 @@ function kpiRingVariant(pct) {
 // Room/Rate Plan Mapping, Source Configuration, URL Manager, Validation,
 // Notes, Configuration Readiness, and Audit History all belong directly to
 // a Competitor — this page works identically whether or not the competitor
-// belongs to any Comparison Group. The benchmark is never this competitor:
+// belongs to any Competitive Set. The benchmark is never this competitor:
 // it's always the Phase 1 Property record it's scoped under (`property`
 // below) — every mapping tab compares this competitor's rooms/rate plans
 // against that property's own rooms/rate plans, never property vs. property.
@@ -78,16 +76,15 @@ export function CompetitorProfilePage() {
   const roomMappings = data.roomMappings.filter((m) => m.competitorId === competitor.id);
   const ratePlanMappings = data.ratePlanMappings.filter((m) => m.competitorId === competitor.id);
   const sourceConfigs = data.sourceConfigs.filter((s) => s.competitorId === competitor.id);
-  const urlRecords = data.urlRecords.filter((u) => u.competitorId === competitor.id);
-  const groupCount = data.groupMemberships.filter((m) => m.competitorId === competitor.id).length;
+  const compSetCount = data.compSetMemberships.filter((m) => m.competitorId === competitor.id).length;
 
   const readiness = useMemo(
     () => computeCompetitorReadiness({ competitor, roomMappings, ratePlanMappings, sourceConfigs }),
     [competitor, roomMappings, ratePlanMappings, sourceConfigs]
   );
   const recentActivityAll = useMemo(
-    () => computeRecentActivity({ competitor, roomMappings, ratePlanMappings, sourceConfigs, urlRecords }, 30),
-    [competitor, roomMappings, ratePlanMappings, sourceConfigs, urlRecords]
+    () => computeRecentActivity({ competitor, roomMappings, ratePlanMappings, sourceConfigs }, 30),
+    [competitor, roomMappings, ratePlanMappings, sourceConfigs]
   );
   const recentActivity = recentActivityAll.slice(0, 6);
 
@@ -194,9 +191,9 @@ export function CompetitorProfilePage() {
             <div className="stat-card__icon"><PlugZap size={20} strokeWidth={2} /></div>
             <div className="stat-card__body"><div className="stat-card__value tabular">{sourceConfigs.length}</div><div className="stat-card__label">Sources</div></div>
           </Card>
-          <Card className="stat-card stat-card--clickable" role="button" tabIndex={0} onClick={() => setActive("groups")} onKeyDown={(e) => e.key === "Enter" && setActive("groups")}>
+          <Card className="stat-card stat-card--clickable" role="button" tabIndex={0} onClick={() => setActive("compsets")} onKeyDown={(e) => e.key === "Enter" && setActive("compsets")}>
             <div className="stat-card__icon"><FolderCog size={20} strokeWidth={2} /></div>
-            <div className="stat-card__body"><div className="stat-card__value tabular">{groupCount}</div><div className="stat-card__label">Groups</div></div>
+            <div className="stat-card__body"><div className="stat-card__value tabular">{compSetCount}</div><div className="stat-card__label">Comp Sets</div></div>
           </Card>
         </div>
       </div>
@@ -248,8 +245,7 @@ export function CompetitorProfilePage() {
                 <div className="detail-field"><span>Room Mappings</span><strong className="tabular">{roomMappings.length}</strong></div>
                 <div className="detail-field"><span>Rate Plan Mappings</span><strong className="tabular">{ratePlanMappings.length}</strong></div>
                 <div className="detail-field"><span>Sources Configured</span><strong className="tabular">{sourceConfigs.length}</strong></div>
-                <div className="detail-field"><span>Custom URLs</span><strong className="tabular">{urlRecords.length}</strong></div>
-                <div className="detail-field"><span>Comparison Groups</span><strong className="tabular">{groupCount}</strong></div>
+                <div className="detail-field"><span>Competitive Sets</span><strong className="tabular">{compSetCount}</strong></div>
               </div>
             </Card>
           </div>
@@ -323,9 +319,8 @@ export function CompetitorProfilePage() {
       {active === "roomMapping" && <RoomMappingTab competitor={competitor} />}
       {active === "ratePlanMapping" && <RatePlanMappingTab competitor={competitor} />}
       {active === "sources" && <SourcesTab competitor={competitor} />}
-      {active === "urls" && <UrlManagerTab competitor={competitor} />}
       {active === "validation" && <ValidationTab competitor={competitor} onNavigateTab={setActive} />}
-      {active === "groups" && <CompetitorGroupsTab competitor={competitor} />}
+      {active === "compsets" && <CompetitorCompSetsTab competitor={competitor} />}
 
       {active === "notes" && (
         <Card>
@@ -362,7 +357,7 @@ export function CompetitorProfilePage() {
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDeletePermanently}
         title="Delete Competitor Permanently"
-        message={`"${competitor.hotelName}" is archived. Permanently deleting it removes its mappings, sources, and URLs too — any Comparison Groups it belongs to are unaffected. This action cannot be undone.`}
+        message={`"${competitor.hotelName}" is archived. Permanently deleting it removes its mappings, sources, and URLs too — any Competitive Sets it belongs to are unaffected. This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />

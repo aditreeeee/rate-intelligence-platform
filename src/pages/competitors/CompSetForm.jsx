@@ -3,7 +3,7 @@ import { Modal, ConfirmModal } from "../../components/ui/Modal.jsx";
 import { Field, Input, Select, Textarea } from "../../components/ui/Input.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { TagPicker } from "../../components/ui/TagChips.jsx";
-import { COMPARISON_GROUP_STATUSES, COMPARISON_GROUP_TAGS } from "../../mocks/competitors.js";
+import { COMP_SET_STATUSES, COMP_SET_TAGS } from "../../mocks/competitors.js";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges.js";
 
 function buildEmpty(scopePropertyId) {
@@ -13,16 +13,16 @@ function buildEmpty(scopePropertyId) {
 function validate(form, { skipProperty = false } = {}) {
   const errors = {};
   if (!skipProperty && !form.propertyId) errors.propertyId = "Property is required.";
-  if (!form.name || !form.name.trim()) errors.name = "Comparison group name is required.";
+  if (!form.name || !form.name.trim()) errors.name = "Competitive set name is required.";
   return errors;
 }
 
-// A Comparison Group represents one market for one Phase 1 property (e.g.
+// A Competitive Set represents one market for one Phase 1 property (e.g.
 // "Luxury Hotels – Bengaluru") — the container Competitors, the Benchmark,
 // and every mapping/source/URL/validation module nest under. It never
 // duplicates or edits Phase 1 property data; `propertyId` is purely a
 // read-only reference chosen once at creation.
-export function ComparisonGroupForm({ open, onClose, onSubmit, initial, properties = [], scopePropertyId }) {
+export function CompSetForm({ open, onClose, onSubmit, initial, properties = [], scopePropertyId }) {
   const [form, setForm] = useState(initial || buildEmpty(scopePropertyId));
   const [errors, setErrors] = useState({});
   const baselineRef = useRef(form);
@@ -58,18 +58,18 @@ export function ComparisonGroupForm({ open, onClose, onSubmit, initial, properti
     <Modal
       open={open}
       onClose={guardedClose}
-      title={initial ? "Edit Comparison Group" : "Add Comparison Group"}
+      title={initial ? "Edit Competitive Set" : "Add Competitive Set"}
       size="md"
       footer={
         <>
           <button className="btn btn--ghost btn--md" onClick={guardedClose} type="button">Cancel</button>
-          <Button variant="primary" size="md" type="submit" form="comparison-group-form">
-            {initial ? "Save Changes" : "Create Group"}
+          <Button variant="primary" size="md" type="submit" form="comp-set-form">
+            {initial ? "Save Changes" : "Create Competitive Set"}
           </Button>
         </>
       }
     >
-      <form id="comparison-group-form" onSubmit={handleSubmit}>
+      <form id="comp-set-form" onSubmit={handleSubmit}>
         <div className="form-grid">
           <div className="form-grid__full">
             <Field label="Property" required id="cg-property" error={errors.propertyId}>
@@ -90,7 +90,7 @@ export function ComparisonGroupForm({ open, onClose, onSubmit, initial, properti
             </Field>
           </div>
           <div className="form-grid__full">
-            <Field label="Group Name" required id="cg-name" error={errors.name} hint='e.g. "Luxury Hotels – Bengaluru"'>
+            <Field label="Competitive Set Name" required id="cg-name" error={errors.name} hint='e.g. "Luxury Hotels – Bengaluru"'>
               <Input id="cg-name" value={form.name} onChange={set("name")} required placeholder="e.g. Luxury Hotels – Bengaluru" />
             </Field>
           </div>
@@ -98,19 +98,19 @@ export function ComparisonGroupForm({ open, onClose, onSubmit, initial, properti
             <Input id="cg-market" value={form.market} onChange={set("market")} placeholder="e.g. Luxury, Business, Resort" />
           </Field>
           <Field label="Status" required id="cg-status">
-            <Select id="cg-status" options={COMPARISON_GROUP_STATUSES} value={form.status} onChange={set("status")} />
+            <Select id="cg-status" options={COMP_SET_STATUSES} value={form.status} onChange={set("status")} />
           </Field>
         </div>
 
         <div style={{ marginTop: "var(--space-6)" }}>
           <Field label="Tags" id="cg-tags">
-            <TagPicker options={COMPARISON_GROUP_TAGS} value={form.tags} onChange={setField("tags")} />
+            <TagPicker options={COMP_SET_TAGS} value={form.tags} onChange={setField("tags")} />
           </Field>
         </div>
 
         <div style={{ marginTop: "var(--space-6)" }}>
           <Field label="Notes" id="cg-notes">
-            <Textarea id="cg-notes" rows={4} value={form.notes} onChange={set("notes")} placeholder="Internal notes about this comparison group..." />
+            <Textarea id="cg-notes" rows={4} value={form.notes} onChange={set("notes")} placeholder="Internal notes about this competitive set..." />
           </Field>
         </div>
       </form>

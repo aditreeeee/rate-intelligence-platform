@@ -9,7 +9,7 @@ import { useToast } from "../../context/ToastContext.jsx";
 const ENTITY_TYPES = [
   { key: "properties", label: "Properties", icon: Building2, requiredFields: ["name", "country", "city"] },
   { key: "rooms", label: "Rooms", icon: BedDouble, requiredFields: ["name", "roomType"] },
-  { key: "ratePlans", label: "Rate Plans", icon: Tag, requiredFields: ["name", "roomId"] },
+  { key: "ratePlans", label: "Rate Plans", icon: Tag, requiredFields: ["name"] },
   { key: "competitors", label: "Competitors", icon: Target, requiredFields: ["hotelName", "country", "city"] },
   { key: "competitorUrls", label: "URLs", icon: Link2, requiredFields: ["label", "url"] },
   { key: "roomMapping", label: "Room Mapping", icon: BedDouble, requiredFields: ["internalRoomId", "competitorRoomLabel"] },

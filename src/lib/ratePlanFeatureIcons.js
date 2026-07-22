@@ -1,6 +1,6 @@
 import {
   Sparkles, Home, Coffee, UtensilsCrossed, Utensils, Undo2, Ban, Percent,
-  CheckCircle2, PauseCircle, Archive, Sun, Clock,
+  CheckCircle2, PauseCircle, Archive, Clock,
 } from "lucide-react";
 
 const DEFAULT_ICON = Sparkles;
@@ -21,7 +21,6 @@ const RATE_PLAN_ICONS = {
   // Statuses
   "Draft": Clock,
   "Active": CheckCircle2,
-  "Seasonal": Sun,
   "Inactive": PauseCircle,
   "Archived": Archive,
 };

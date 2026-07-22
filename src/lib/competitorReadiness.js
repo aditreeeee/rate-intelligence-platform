@@ -9,7 +9,7 @@
 // rate plans have been mapped to the benchmark property's own rooms and
 // rate plans (Room Mapping, Rate Plan Mapping, Source Configuration,
 // Validation, Notes, and Audit History all belong directly to a competitor,
-// never to a Comparison Group — groups are purely optional tags).
+// never to a Competitive Set — comp sets are purely optional tags).
 // `computePropertyReadiness` aggregates across every competitor under a
 // property for the Competitors list page's summary. None of this is
 // live/historical pricing, and none of it implies a property-to-property
@@ -92,21 +92,21 @@ const ACTIVITY_LABELS = {
   competitor: (r) => ({ label: r.hotelName, meta: "Competitor" }),
   roomMapping: (r) => ({ label: r.competitorRoomLabel, meta: "Room Mapping" }),
   ratePlanMapping: (r) => ({ label: r.competitorRatePlanName, meta: "Rate Plan Mapping" }),
-  sourceConfig: (r) => ({ label: r.sourceName, meta: "Source Configuration" }),
-  urlRecord: (r) => ({ label: r.label, meta: "URL Record" }),
+  // Sources absorbs what used to be a separate "URL Record" activity type —
+  // every source/URL for a competitor is a `sourceConfigs` row now.
+  sourceConfig: (r) => ({ label: r.sourceName, meta: "Source" }),
 };
 
 // Recent Activity is derived, not logged — every record already carries
 // `lastModifiedBy`/`lastModifiedAt` (DataContext's `stamp()`), so a feed is
 // just those records merged, sorted, and capped, with no separate event
 // store to keep in sync. Scoped to one competitor.
-export function computeRecentActivity({ competitor, roomMappings, ratePlanMappings, sourceConfigs, urlRecords }, limit = 6) {
+export function computeRecentActivity({ competitor, roomMappings, ratePlanMappings, sourceConfigs }, limit = 6) {
   const entries = [
     { type: "competitor", record: competitor },
     ...roomMappings.map((r) => ({ type: "roomMapping", record: r })),
     ...ratePlanMappings.map((r) => ({ type: "ratePlanMapping", record: r })),
     ...sourceConfigs.map((r) => ({ type: "sourceConfig", record: r })),
-    ...urlRecords.map((r) => ({ type: "urlRecord", record: r })),
   ].filter((e) => e.record?.lastModifiedAt);
 
   return entries

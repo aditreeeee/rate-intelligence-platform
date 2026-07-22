@@ -19,7 +19,7 @@ export function CompetitorGeneralSettings() {
 
   return (
     <Card>
-      <p className="settings-section__desc">Defaults applied when creating new Comparison Groups and Competitors.</p>
+      <p className="settings-section__desc">Defaults applied when creating new Competitive Sets and Competitors.</p>
       <form onSubmit={handleSave} className="form-grid" style={{ marginTop: "var(--space-5)" }}>
         <Field label="Default Currency" id="cgs-currency" hint="Used to prefill Rate Plan Mapping's currency field.">
           <Select id="cgs-currency" options={CURRENCIES} value={form.defaultCurrency} onChange={set("defaultCurrency")} />

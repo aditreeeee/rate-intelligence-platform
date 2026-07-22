@@ -9,7 +9,7 @@ import { useToast } from "../../context/ToastContext.jsx";
 const EXPORT_FORMATS = ["CSV", "Excel"];
 
 // Defaults for the Import Wizard and Export Menu when used from any
-// Competitor Configuration list (Competitors, Comparison Groups). Purely
+// Competitor Configuration list (Competitors, Competitive Sets). Purely
 // frontend preferences today — the seam a real .NET import/export
 // endpoint would read the same defaults from later.
 export function CompetitorImportExportSettings() {

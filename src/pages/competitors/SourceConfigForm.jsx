@@ -15,6 +15,7 @@ function buildEmpty(sourceTypes) {
     sourceType: sourceTypes[0]?.name || "",
     sourceName: "", sourceUrl: "", priority: "Medium", status: "Draft", notes: "",
     xpath: "", cssSelector: "", apiEndpoint: "", authRequired: false, parserVersion: "",
+    lastCheckedAt: null, lastCheckStatus: "", lastCheckError: "",
   };
 }
 
@@ -35,7 +36,11 @@ function validate(form) {
 // without a code change — same pattern as Room Types/Amenities. XPath / CSS
 // Selector / API Endpoint / Authentication / Parser Version are deliberately
 // inert placeholder fields for the eventual Python collection service;
-// nothing here validates or executes them.
+// nothing here validates or executes them. `lastCheckedAt`/`lastCheckStatus`/
+// `lastCheckError` are a second set of inert placeholders, reserved for the
+// same future scraper to report back scrape-health results (last run time,
+// OK/Error/Unknown, and any error detail) — nothing computes or displays
+// them as live data today; they're just fields with a home already waiting.
 export function SourceConfigForm({ open, onClose, onSubmit, initial, competitorName }) {
   const data = useData();
   const sourceTypes = data.masters.sourceTypes || [];
@@ -143,6 +148,23 @@ export function SourceConfigForm({ open, onClose, onSubmit, initial, competitorN
               onChange={(v) => setForm((f) => ({ ...f, authRequired: v === "Yes" }))}
               multiple={false}
             />
+          </div>
+        </div>
+
+        <div style={{ marginTop: "var(--space-6)" }}>
+          <div className="field__label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <Settings2 size={13} strokeWidth={2} /> Future Health Monitoring (Placeholder)
+          </div>
+          <p className="master-manager__hint" style={{ marginBottom: 12 }}>
+            Inert today — reserved for the future Python collection service to report scrape health back onto this
+            source (last checked time, OK/Error/Unknown, and any error detail). Nothing populates these yet.
+          </p>
+          <div className="form-grid">
+            <Field label="Last Checked At" id="src-last-checked"><Input id="src-last-checked" value={form.lastCheckedAt || ""} disabled placeholder="Not yet checked" /></Field>
+            <Field label="Last Check Status" id="src-last-check-status"><Input id="src-last-check-status" value={form.lastCheckStatus || ""} disabled placeholder="Unknown" /></Field>
+            <div className="form-grid__full">
+              <Field label="Last Check Error" id="src-last-check-error"><Input id="src-last-check-error" value={form.lastCheckError || ""} disabled placeholder="—" /></Field>
+            </div>
           </div>
         </div>
 

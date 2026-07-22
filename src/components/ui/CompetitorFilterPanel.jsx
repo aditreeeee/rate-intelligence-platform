@@ -12,7 +12,7 @@ const READINESS_BUCKETS = ["Ready", "Needs Attention", "Not Ready"];
 
 // Left filter panel for the Competitors page (the Phase 2 primary
 // workflow) — deliberately kept to only the facets used in daily workflow:
-// Property, Comparison Groups (optional), Status, and Configuration
+// Property, Competitive Sets (optional), Status, and Configuration
 // Readiness. Brand/City/Star Rating/Benchmark/Priority/Tags were removed as
 // filters (they're still visible as table columns and editable fields —
 // just not filterable here) to keep the panel scannable. Same composition
@@ -89,9 +89,9 @@ function PanelBody({ getCount, groupOptions, groupFilter, setGroupFilter, status
         </div>
       </FilterAccordionSection>
 
-      <FilterAccordionSection title="Comparison Groups" open={expanded.groups} onToggle={() => toggleSection("groups")}>
+      <FilterAccordionSection title="Competitive Sets" open={expanded.groups} onToggle={() => toggleSection("groups")}>
         {groupOptions.length === 0 ? (
-          <div className="property-panel__empty">No groups yet — optional, competitors work fine without one.</div>
+          <div className="property-panel__empty">No competitive sets yet — optional, competitors work fine without one.</div>
         ) : (
           <div className="filter-checklist">
             <div className="filter-checklist__options">

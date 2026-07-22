@@ -82,8 +82,8 @@
 .page-toolbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); flex-wrap: wrap; }
 .page-toolbar__spacer { flex: 1; }
 
-/* Opt-in content-width cap for dense, KPI-heavy pages (e.g. a Comparison
-   Group's profile) — most list pages intentionally use the full width for
+/* Opt-in content-width cap for dense, KPI-heavy pages (e.g. a Competitive
+   Set's profile) — most list pages intentionally use the full width for
    wide tables, so this is a modifier, not a change to `.portal-main`. */
 .page-container--narrow { max-width: 1280px; margin: 0 auto; }
 
@@ -102,7 +102,7 @@
 .stat-card--clickable:active { transform: translateY(0) scale(0.99); }
 .stat-card--clickable:focus-visible { outline: 2px solid var(--color-surf); outline-offset: 3px; }
 
-/* Equal-width/equal-height KPI row (Comparison Group profile header KPIs) —
+/* Equal-width/equal-height KPI row (Competitive Set profile header KPIs) —
    a stricter variant of `.stat-row`: fixed column count instead of
    auto-fit, and stretched card height so a long value (e.g. a benchmark
    hotel name) never makes one tile taller than its siblings. */

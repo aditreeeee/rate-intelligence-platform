@@ -268,7 +268,7 @@
 .tabs__tab--active:hover { color: var(--color-twilight); background: var(--color-surface); }
 
 /* Sticky variant — used on pages dense enough that scrolling past the tab
-   bar is common (e.g. a Comparison Group profile with many tabs). Anchored
+   bar is common (e.g. a Competitive Set profile with many tabs). Anchored
    just under the app's own scroll offset with a solid background so
    content doesn't show through, plus a hairline + shadow that only appears
    once something is actually scrolled underneath. */
@@ -431,7 +431,7 @@
 }
 .progress-bar__action:hover { color: var(--color-twilight); text-decoration: underline; text-underline-offset: 2px; }
 
-/* ===== Configuration summary (Comparison Group Profile — Overview tab) ===== */
+/* ===== Configuration summary (Competitive Set Profile — Overview tab) ===== */
 .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); align-items: start; }
 @media (max-width: 900px) { .overview-grid { grid-template-columns: 1fr; } }
 .overview-grid__col { display: flex; flex-direction: column; gap: var(--space-5); }
@@ -660,6 +660,24 @@
 .current-price-card__stat strong { font-size: 20px; font-weight: 800; }
 .current-price-card__range { font-size: 12.5px; opacity: 0.85; margin-top: 12px; }
 .current-price-card__empty { font-size: 13.5px; opacity: 0.9; }
+
+/* Pricing Ranges inline-editable grid */
+.pricing-ranges-table__error {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--color-danger);
+  background: var(--color-danger-bg); border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+}
+.pricing-ranges-table__row--conflict td { background: var(--color-danger-bg); }
+.pricing-ranges-table .input, .pricing-ranges-table .select { min-width: 90px; }
+
+/* Rate Plan Room cards (RatePlanForm's Rooms tab) */
+.rate-plan-room-card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin-bottom: var(--space-4); overflow: hidden; }
+.rate-plan-room-card__header { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-surface-alt, rgba(127,127,127,0.06)); }
+.rate-plan-room-card__room-field { flex: 1; min-width: 0; }
+.rate-plan-room-card__actions { display: flex; align-items: center; gap: 4px; }
+.rate-plan-room-card__body { padding: var(--space-4); }
+.rate-plan-room-card__error { font-size: 12px; font-weight: 600; color: var(--color-danger); margin-top: 6px; }
 
 /* ===== Feature chip grid (always-visible selectable feature lists) ===== */
 .feature-grid { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-2); }

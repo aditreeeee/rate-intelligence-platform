@@ -41,7 +41,13 @@ export function RoomProfilePage() {
 
   const room = data.rooms.find((r) => r.id === id);
   const property = room ? data.properties.find((p) => p.id === room.propertyId) : null;
-  const ratePlans = useMemo(() => (room ? data.ratePlans.filter((rp) => rp.roomId === room.id) : []), [data.ratePlans, room]);
+  // A Rate Plan shows up here if it has at least one entry in `ratePlanRooms`
+  // pointing at this room — Rate Plans no longer carry a direct `roomId`.
+  const ratePlans = useMemo(() => {
+    if (!room) return [];
+    const ratePlanIds = new Set(data.ratePlanRooms.filter((rp) => rp.roomId === room.id).map((rp) => rp.ratePlanId));
+    return data.ratePlans.filter((rp) => ratePlanIds.has(rp.id));
+  }, [data.ratePlans, data.ratePlanRooms, room]);
 
   if (!room) {
     return (
@@ -214,15 +220,14 @@ export function RoomProfilePage() {
               />
             ) : (
               <div className="detail-linked-list">
-                {ratePlans.map((rp) => {
-                  const seasonCount = (rp.seasons || []).length;
-                  return (
-                    <div key={rp.id} className="detail-linked-item" style={{ cursor: "pointer" }} onClick={() => navigate(`/portal/rate-plans/${rp.id}`)}>
-                      <span>{rp.name}</span>
-                      <span className="table__cell-muted">{seasonCount ? `${seasonCount} season${seasonCount === 1 ? "" : "s"}` : "No seasons"}</span>
-                    </div>
-                  );
-                })}
+                {ratePlans.map((rp) => (
+                  <div key={rp.id} className="detail-linked-item" style={{ cursor: "pointer" }} onClick={() => navigate(`/portal/rate-plans/${rp.id}`)}>
+                    <span>{rp.name}</span>
+                    <span className="table__cell-muted">
+                      {rp.startDate || rp.endDate ? `${rp.startDate || "…"} – ${rp.endDate || "…"}` : "Always applicable"}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -253,7 +258,7 @@ export function RoomProfilePage() {
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDeletePermanently}
         title="Delete Room Permanently"
-        message={`"${room.name}" is archived. Permanently deleting it will also remove its rate plans. This action cannot be undone.`}
+        message={`"${room.name}" is archived. Permanently deleting it will also remove it from any rate plans (their Pricing Ranges for this room go with it, but the rate plans themselves remain). This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         danger
       />

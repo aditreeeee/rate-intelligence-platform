@@ -17,7 +17,7 @@ export const RATE_PLAN_TEMPLATES = [
   {
     key: "weekend",
     label: "Weekend",
-    values: { name: "Weekend Getaway", mealPlan: "CP", cancellationPolicy: "Free Cancellation (72h)", status: "Seasonal" },
+    values: { name: "Weekend Getaway", mealPlan: "CP", cancellationPolicy: "Free Cancellation (72h)", status: "Active" },
   },
   {
     key: "non-refundable",

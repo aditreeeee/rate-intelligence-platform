@@ -6,9 +6,9 @@ import { Modal } from "./Modal.jsx";
 import { Checkbox } from "./Checkbox.jsx";
 import { FilterAccordionSection, CheckboxListFilter, FilterPanelFrame } from "./FilterSection.jsx";
 import { usePersistedState } from "../../hooks/usePersistedState.js";
-import { COMPARISON_GROUP_TAGS } from "../../mocks/competitors.js";
+import { COMP_SET_TAGS } from "../../mocks/competitors.js";
 
-// Left filter panel for the Comparison Groups (Phase 2 homepage) list page —
+// Left filter panel for the Competitive Sets (Phase 2 homepage) list page —
 // same composition as PropertyFilterPanel (Rooms) and PropertyRoomTreeFilter
 // (Rate Plans): a fixed-width in-flow panel on desktop, a drawer+Modal on
 // narrow viewports, built entirely from the shared FilterSection primitives.
@@ -114,13 +114,13 @@ function PanelBody({ getCount, tagFilter, setTagFilter }) {
       </FilterAccordionSection>
 
       <FilterAccordionSection title="Tags" open={expanded.tags} onToggle={() => toggleSection("tags")}>
-        <CheckboxListFilter options={COMPARISON_GROUP_TAGS} selected={tagFilter} onChange={setTagFilter} />
+        <CheckboxListFilter options={COMP_SET_TAGS} selected={tagFilter} onChange={setTagFilter} />
       </FilterAccordionSection>
     </FilterPanelFrame>
   );
 }
 
-export function ComparisonGroupFilterPanel({ getCount, tagFilter, setTagFilter }) {
+export function CompSetFilterPanel({ getCount, tagFilter, setTagFilter }) {
   const { selectedPropertyIds } = usePropertyContext();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const totalActive = selectedPropertyIds.length + tagFilter.length;

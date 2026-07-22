@@ -17,8 +17,8 @@ import { RatePlanProfilePage } from "./pages/ratePlans/RatePlanProfilePage.jsx";
 import { SettingsPage } from "./pages/settings/SettingsPage.jsx";
 import { CompetitorsPage } from "./pages/competitors/CompetitorsPage.jsx";
 import { CompetitorProfilePage } from "./pages/competitors/CompetitorProfilePage.jsx";
-import { ComparisonGroupsPage } from "./pages/competitors/ComparisonGroupsPage.jsx";
-import { ComparisonGroupProfilePage } from "./pages/competitors/ComparisonGroupProfilePage.jsx";
+import { CompSetsPage } from "./pages/competitors/CompSetsPage.jsx";
+import { CompSetProfilePage } from "./pages/competitors/CompSetProfilePage.jsx";
 
 export default function App() {
   return (
@@ -47,8 +47,8 @@ export default function App() {
                 <Route path="rate-plans/:id" element={<RatePlanProfilePage />} />
                 <Route path="competitors" element={<CompetitorsPage />} />
                 <Route path="competitors/:id" element={<CompetitorProfilePage />} />
-                <Route path="comparison-groups" element={<ComparisonGroupsPage />} />
-                <Route path="comparison-groups/:id" element={<ComparisonGroupProfilePage />} />
+                <Route path="comp-sets" element={<CompSetsPage />} />
+                <Route path="comp-sets/:id" element={<CompSetProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               <Route path="*" element={<Navigate to="/login" replace />} />

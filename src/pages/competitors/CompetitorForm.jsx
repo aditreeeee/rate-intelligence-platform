@@ -25,7 +25,7 @@ function validate(form) {
   return errors;
 }
 
-// A Competitor Hotel belongs to exactly one Comparison Group. `futurePropertyId`
+// A Competitor Hotel belongs to exactly one Competitive Set. `futurePropertyId`
 // is intentionally a disabled placeholder field — Phase 2 never creates or
 // links a real Phase 1 Property record for a competitor; that linkage (if it
 // ever happens, e.g. onboarding a competitor as a client) is out of scope

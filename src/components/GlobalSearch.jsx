@@ -39,7 +39,7 @@ export function GlobalSearch() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return { properties: [], rooms: [], ratePlans: [], comparisonGroups: [], competitors: [] };
+    if (!q) return { properties: [], rooms: [], ratePlans: [], compSets: [], competitors: [] };
 
     const properties = data.properties
       .filter((p) => [p.id, p.name, p.city, p.country].some((f) => String(f).toLowerCase().includes(q)))
@@ -53,7 +53,7 @@ export function GlobalSearch() {
       .filter((rp) => [rp.id, rp.name].some((f) => String(f).toLowerCase().includes(q)))
       .slice(0, MAX_PER_GROUP);
 
-    const comparisonGroups = data.comparisonGroups
+    const compSets = data.compSets
       .filter((g) => [g.id, g.name, g.market].some((f) => String(f || "").toLowerCase().includes(q)))
       .slice(0, MAX_PER_GROUP);
 
@@ -64,12 +64,12 @@ export function GlobalSearch() {
       })
       .slice(0, MAX_PER_GROUP);
 
-    return { properties, rooms, ratePlans, comparisonGroups, competitors };
-  }, [query, data.properties, data.rooms, data.ratePlans, data.comparisonGroups, data.competitors]);
+    return { properties, rooms, ratePlans, compSets, competitors };
+  }, [query, data.properties, data.rooms, data.ratePlans, data.compSets, data.competitors]);
 
   const hasResults =
     results.properties.length || results.rooms.length || results.ratePlans.length ||
-    results.comparisonGroups.length || results.competitors.length;
+    results.compSets.length || results.competitors.length;
 
   const goTo = (path) => {
     navigate(path);
@@ -141,11 +141,11 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {results.comparisonGroups.length > 0 && (
+          {results.compSets.length > 0 && (
             <div className="global-search__group">
-              <div className="global-search__group-label"><Target size={12} strokeWidth={2} /> Comparison Groups</div>
-              {results.comparisonGroups.map((g) => (
-                <button key={g.id} className="global-search__item" onClick={() => goTo(`/portal/comparison-groups/${g.id}`)}>
+              <div className="global-search__group-label"><Target size={12} strokeWidth={2} /> Competitive Sets</div>
+              {results.compSets.map((g) => (
+                <button key={g.id} className="global-search__item" onClick={() => goTo(`/portal/comp-sets/${g.id}`)}>
                   <span className="global-search__item-name">{g.name}</span>
                   <span className="global-search__item-meta tabular">{g.id}</span>
                 </button>
