@@ -232,16 +232,6 @@ export function RoomsPage() {
         />
 
         <div className="property-scoped-layout__content">
-          {!hasPropertySelection ? (
-            <Card>
-              <EmptyState
-                icon={Building2}
-                title="Select a property to get started"
-                message="Select one or more properties from the panel on the left to view their rooms."
-              />
-            </Card>
-          ) : (
-          <>
           <div className="page-section">
             <Tabs tabs={VIEW_TABS} active={viewMode} onChange={setViewMode} />
           </div>
@@ -249,18 +239,18 @@ export function RoomsPage() {
           <Card padded={false}>
         <div style={{ padding: "20px 20px 0" }}>
           <div className="page-toolbar">
-            <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rooms..." />
+            <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rooms..." disabled={!hasPropertySelection} />
             {filtersActive && (
               <button className="btn btn--ghost btn--sm" onClick={resetFilters}>
                 <RotateCcw size={13} strokeWidth={2} /> Reset
               </button>
             )}
             <div className="page-toolbar__spacer" />
-            <button className="btn btn--ghost btn--md" onClick={() => setImportOpen(true)}>
+            <button className="btn btn--ghost btn--md" onClick={() => setImportOpen(true)} disabled={!hasPropertySelection}>
               <Upload size={16} strokeWidth={2} /><span>Import</span>
             </button>
             <ExportMenu rows={exportRowsData} columns={exportColumns} filenameBase="rooms" selectedCount={selection.count} />
-            <Button variant="primary" size="md" icon={Plus} onClick={openCreate}>Add Room</Button>
+            <Button variant="primary" size="md" icon={Plus} onClick={openCreate} disabled={!hasPropertySelection}>Add Room</Button>
           </div>
         </div>
 
@@ -286,22 +276,30 @@ export function RoomsPage() {
             onSort={onSort}
             rowKey={(row) => row.id}
             emptyState={
-              <EmptyState
-                icon={BedDouble}
-                title={archivedView ? "No archived rooms" : filtersActive ? "No rooms match your filters" : "No rooms yet"}
-                message={
-                  archivedView || filtersActive
-                    ? "Try adjusting your search or filters."
-                    : "Create your first room, or import one from a template."
-                }
-                action={
-                  archivedView ? null : filtersActive ? (
-                    <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
-                  ) : (
-                    <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Room</Button>
-                  )
-                }
-              />
+              !hasPropertySelection ? (
+                <EmptyState
+                  icon={Building2}
+                  title="Select a property to get started"
+                  message="Select one or more properties from the panel on the left to view their rooms."
+                />
+              ) : (
+                <EmptyState
+                  icon={BedDouble}
+                  title={archivedView ? "No archived rooms" : filtersActive ? "No rooms match your filters" : "No rooms yet"}
+                  message={
+                    archivedView || filtersActive
+                      ? "Try adjusting your search or filters."
+                      : "Create your first room, or import one from a template."
+                  }
+                  action={
+                    archivedView ? null : filtersActive ? (
+                      <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Room</Button>
+                    )
+                  }
+                />
+              )
             }
             renderRow={(r) => (
               <tr key={r.id}>
@@ -348,8 +346,6 @@ export function RoomsPage() {
           <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
             </div>
           </Card>
-          </>
-          )}
         </div>
       </div>
 

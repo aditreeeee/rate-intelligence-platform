@@ -1,11 +1,21 @@
 import React from "react";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
+// The table shell (scroll container, <colgroup>, header) always renders,
+// even with zero rows — only the tbody content swaps between real rows and
+// the empty-state row. This keeps column widths, the header, and the
+// surrounding card/toolbar/pagination from jumping around every time a
+// filter change (or property selection change) drives the row count to 0
+// and back.
 export function Table({ columns, data, sortKey, sortDir, onSort, renderRow, rowKey, emptyState }) {
-  if (!data.length) return emptyState || null;
   return (
     <div className="table-scroll">
-      <table className="table">
+      <table className="table" style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          {columns.map((col) => (
+            <col key={col.key} style={col.width ? { width: col.width } : undefined} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {columns.map((col) => {
@@ -24,7 +34,6 @@ export function Table({ columns, data, sortKey, sortDir, onSort, renderRow, rowK
                   }}
                   tabIndex={col.sortable ? 0 : undefined}
                   aria-sort={ariaSort}
-                  style={col.width ? { width: col.width } : undefined}
                 >
                   <span className="table__th-content">
                     {col.label}
@@ -44,7 +53,15 @@ export function Table({ columns, data, sortKey, sortDir, onSort, renderRow, rowK
             })}
           </tr>
         </thead>
-        <tbody>{data.map((row) => renderRow(row, rowKey(row)))}</tbody>
+        <tbody key={data.length ? "data" : "empty"} className="table__tbody-transition">
+          {data.length ? (
+            data.map((row) => renderRow(row, rowKey(row)))
+          ) : (
+            <tr className="table__empty-row">
+              <td colSpan={columns.length}>{emptyState}</td>
+            </tr>
+          )}
+        </tbody>
       </table>
     </div>
   );

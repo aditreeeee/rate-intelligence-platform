@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 
-export function SearchBar({ value, onChange, placeholder = "Search...", debounceMs = 250 }) {
+export function SearchBar({ value, onChange, placeholder = "Search...", debounceMs = 250, disabled = false }) {
   const [localValue, setLocalValue] = useState(value);
   const timerRef = useRef(null);
 
@@ -28,6 +28,7 @@ export function SearchBar({ value, onChange, placeholder = "Search...", debounce
         onChange={handleChange}
         placeholder={placeholder}
         aria-label={placeholder}
+        disabled={disabled}
       />
     </div>
   );

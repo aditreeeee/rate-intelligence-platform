@@ -184,6 +184,11 @@
 [data-density="compact"] .table td { padding: 8px 16px; font-size: 13px; }
 .table tbody tr:hover { background: var(--color-surface-alt); box-shadow: inset 3px 0 0 var(--color-surf); }
 .table tbody tr:last-child td { border-bottom: none; }
+.table__empty-row:hover { background: none; box-shadow: none; }
+.table__empty-row td { padding: 0; border-bottom: none; }
+.table__empty-row .empty-state { padding: var(--space-8) var(--space-4); }
+.table__tbody-transition { animation: table-tbody-fade-in var(--transition-base) ease; }
+@keyframes table-tbody-fade-in { from { opacity: 0; } to { opacity: 1; } }
 .table__cell-primary { font-weight: 700; color: var(--color-text); }
 .table__cell-muted { color: var(--color-text-faint); font-size: 13px; }
 .table__actions { display: flex; gap: 6px; justify-content: flex-end; }

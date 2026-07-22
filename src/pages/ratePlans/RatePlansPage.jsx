@@ -259,16 +259,6 @@ export function RatePlansPage() {
         />
 
         <div className="property-scoped-layout__content">
-          {!hasSelection ? (
-            <Card>
-              <EmptyState
-                icon={Building2}
-                title="Select a property or room to view rate plans"
-                message="Select one or more properties or rooms from the panel on the left to view their rate plans."
-              />
-            </Card>
-          ) : (
-          <>
           <div className="page-section">
             <Tabs tabs={VIEW_TABS} active={viewMode} onChange={setViewMode} />
           </div>
@@ -276,18 +266,18 @@ export function RatePlansPage() {
           <Card padded={false}>
         <div style={{ padding: "20px 20px 0" }}>
           <div className="page-toolbar">
-            <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rate plans..." />
+            <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search rate plans..." disabled={!hasSelection} />
             {filtersActive && (
               <button className="btn btn--ghost btn--sm" onClick={resetFilters}>
                 <RotateCcw size={13} strokeWidth={2} /> Reset
               </button>
             )}
             <div className="page-toolbar__spacer" />
-            <button className="btn btn--ghost btn--md" onClick={() => setImportOpen(true)}>
+            <button className="btn btn--ghost btn--md" onClick={() => setImportOpen(true)} disabled={!hasSelection}>
               <Upload size={16} strokeWidth={2} /><span>Import</span>
             </button>
             <ExportMenu rows={exportRowsData} columns={exportColumns} filenameBase="rate-plans" selectedCount={selection.count} />
-            <Button variant="primary" size="md" icon={Plus} onClick={openCreate}>Add Rate Plan</Button>
+            <Button variant="primary" size="md" icon={Plus} onClick={openCreate} disabled={!hasSelection}>Add Rate Plan</Button>
           </div>
         </div>
 
@@ -312,22 +302,30 @@ export function RatePlansPage() {
             onSort={onSort}
             rowKey={(row) => row.id}
             emptyState={
-              <EmptyState
-                icon={Tag}
-                title={archivedView ? "No archived rate plans" : filtersActive ? "No rate plans match your filters" : "No rate plans yet"}
-                message={
-                  archivedView || filtersActive
-                    ? "Try adjusting your search or filters."
-                    : "Create your first rate plan, or import one from a template."
-                }
-                action={
-                  archivedView ? null : filtersActive ? (
-                    <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
-                  ) : (
-                    <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Rate Plan</Button>
-                  )
-                }
-              />
+              !hasSelection ? (
+                <EmptyState
+                  icon={Building2}
+                  title="Select a property or room to view rate plans"
+                  message="Select one or more properties or rooms from the panel on the left to view their rate plans."
+                />
+              ) : (
+                <EmptyState
+                  icon={Tag}
+                  title={archivedView ? "No archived rate plans" : filtersActive ? "No rate plans match your filters" : "No rate plans yet"}
+                  message={
+                    archivedView || filtersActive
+                      ? "Try adjusting your search or filters."
+                      : "Create your first rate plan, or import one from a template."
+                  }
+                  action={
+                    archivedView ? null : filtersActive ? (
+                      <Button variant="secondary" size="sm" onClick={resetFilters}>Clear Filters</Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" icon={Plus} onClick={openCreate}>Create Rate Plan</Button>
+                    )
+                  }
+                />
+              )
             }
             renderRow={(rp) => {
               const room = roomLookup(rp.roomId);
@@ -372,8 +370,6 @@ export function RatePlansPage() {
           <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
             </div>
           </Card>
-          </>
-          )}
         </div>
       </div>
 
